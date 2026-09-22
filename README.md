@@ -1,134 +1,83 @@
-# HPP Smart Pricing
+# HPP Smart Pricing — POS & Inventory
 
-Aplikasi web untuk menghitung Harga Pokok Produksi (HPP) dan merekomendasikan harga jual produk secara otomatis untuk bisnis seperti toko bunga, bakery, atau usaha rumahan yang mengelola bahan baku dan resep.
+Aplikasi PHP procedural untuk UMKM: bahan dan satuan, recipe/BOM, HPP,
+pembelian, POS, pengurangan stok resep, stock movement, opname, waste,
+dashboard, laporan, dan pengaturan markup.
 
-Project ini dibuat khusus untuk mendukung proses pengelolaan data bahan, pembuatan resep produk, serta kalkulasi harga jual berdasarkan target margin yang diinginkan.
+## Teknologi dan requirement
 
-## Fitur utama
+- PHP 7.4+ (mysqli, session, JSON)
+- MySQL 5.7+/MariaDB dengan engine InnoDB
+- Apache atau PHP built-in server
+- Tidak memerlukan npm, Node.js, atau framework
 
-- Manajemen data bahan baku
-  - nama bahan
-  - satuan dasar
-  - harga beli
-  - jumlah dan satuan pembelian
-- Pembuatan produk/resep
-  - kombinasi beberapa bahan
-  - input jumlah bahan per resep
-  - biaya alat dan biaya operasional
-- Perhitungan HPP otomatis
-  - menghitung biaya bahan per resep
-  - menambahkan biaya alat dan operasional
-- Rekomendasi harga jual
-  - tier murah: 15%
-  - tier normal: 30%
-  - tier mahal: 50%
-- Dashboard produk
-  - daftar produk yang tersimpan
-  - lihat total HPP dan harga jual rekomendasi
-  - edit dan hapus produk
-- UI yang sederhana dan responsif untuk kebutuhan operasional harian
+## Instalasi
 
-## Teknologi yang digunakan
+1. Buat database MySQL kosong dan import `database.sql`.
+2. Salin `config.example.php` (atau buat manual) menjadi `config.local.php`,
+   lalu isi host, user, password, database, dan port. `config.local.php`
+   diabaikan git dan tidak boleh dipublikasikan.
+3. Untuk database lama, backup dahulu lalu jalankan SQL di
+   `database/migrations/001_operational_schema.sql` menggunakan client MySQL.
+   Migration bersifat additive; jangan menghapus tabel lama.
+4. Jalankan `php -S localhost:8000` dari root repository, lalu buka
+   `http://localhost:8000/`.
 
-- PHP
-- MySQL
-- HTML
-- CSS
-- JavaScript vanilla
+## Modul
 
-## Struktur project
+| Modul | File |
+| --- | --- |
+| Dashboard | `index.php` |
+| Bahan dan harga dasar | `ingredients.php` |
+| Produk/resep/HPP | `products.php` |
+| Pembelian/restock | `purchases.php` |
+| POS atomic | `pos.php` |
+| Stok, opname, waste, kartu stok | `inventory.php` |
+| Penjualan dan CSV | `reports.php` |
+| Markup dan strict stock | `settings.php` |
 
-- `index.php` — logika utama aplikasi, proses CRUD produk dan bahan
-- `products.php` — halaman manajemen produk dan resep
-- `ingredients.php` — halaman manajemen bahan baku
-- `database.sql` — struktur database
-- `config.php` — konfigurasi koneksi database
-- `config.local.php` — konfigurasi lokal yang dibuat secara manual
-- `assets/` — file CSS, JavaScript, dan aset visual
+`includes/app.php` adalah sumber tunggal konversi satuan, kalkulasi HPP,
+query helper, CSRF, dan operasi stock movement. `includes/actions.php`
+menjalankan semua perubahan data dengan prepared statements. Penjualan
+menyimpan snapshot resep/HPP, sehingga perubahan harga atau resep tidak
+mengubah histori.
 
-## Prasyarat
+CSV bahan, produk, dan kartu stok tersedia melalui `export.php?type=ingredients`,
+`export.php?type=products`, dan `export.php?type=movements`.
 
-Pastikan environment berikut sudah tersedia:
+## Satuan dan HPP
 
-- PHP 7.4+ atau versi yang kompatibel
-- MySQL / MariaDB
-- Web server lokal seperti XAMPP, WAMP, Laragon, atau PHP built-in server
+Stok internal memakai gram, ml, atau pcs. Contoh 1 kg = 1.000 gram; harga
+dasar dihitung dari harga pembelian dibagi jumlah pembelian yang dikonversi.
+Resep menyimpan quantity dalam satuan stok. Uang disimpan sebagai `DECIMAL`
+di MySQL. Mode `strict` (default) menolak penjualan saat bahan tidak cukup;
+mode `allow_negative` tersedia di Settings.
 
-## Setup langkah demi langkah
+## PWA dan offline
 
-1. Clone atau unduh project ini ke folder web server Anda.
-2. Buat database MySQL baru.
-3. Import file `database.sql` ke database tersebut.
-4. Buat file `config.local.php` berdasarkan konfigurasi berikut:
+`manifest.webmanifest`, `service-worker.js`, dan `assets/pwa.js` membuat UI
+installable dan meng-cache asset static. Status ONLINE/OFFLINE ditampilkan.
+Backend MySQL tetap memerlukan koneksi server: transaksi offline belum
+diantrekan dan tidak boleh dianggap berhasil.
 
-```php
-<?php
-return [
-    'host' => 'localhost',
-    'username' => 'root',
-    'password' => '',
-    'database' => 'hpp_smart_pricing',
-    'port' => 3306,
-];
-```
+## Shared hosting dan keamanan
 
-5. Jalankan aplikasi melalui browser:
+Upload file PHP, `assets/`, `api/`, `database/`, dan manifest ke hosting.
+Pastikan `config.local.php` tidak dapat diunduh; `.htaccess` sudah memblokir
+file konfigurasi dan SQL pada Apache. Form perubahan memakai CSRF, output
+di-escape, data memakai prepared statements, dan bahan/produk dinonaktifkan
+(soft delete) setelah digunakan. Error teknis dicatat ke error log server,
+sedangkan pengguna melihat pesan yang aman.
 
-```bash
-php -S localhost:8000
-```
+Pada akses pertama, isi `setup_key` di `config.local.php` dengan nilai rahasia
+yang hanya diketahui operator, lalu `login.php` membuat akun ADMIN pertama
+dengan password minimal 8 karakter. Akun yang sudah masuk dapat digunakan untuk POS; operasi
+pengaturan, stok, pembelian, resep, dan pembatalan transaksi dibatasi untuk
+role ADMIN.
 
-Lalu buka:
+## Validasi cepat
 
-```text
-http://localhost:8000/
-```
-
-## Alur penggunaan aplikasi
-
-### 1. Tambah bahan baku
-Masukkan data bahan seperti nama, satuan dasar, harga beli, jumlah pembelian, dan satuan harga.
-
-### 2. Buat produk baru
-Pilih bahan, masukkan jumlah penggunaan, dan tambahkan biaya alat serta operasional.
-
-### 3. Hitung HPP
-Sistem akan menghitung total biaya bahan plus biaya tambahan secara otomatis.
-
-### 4. Rekomendasi harga jual
-Aplikasi akan menghitung harga jual berdasarkan markup yang dipilih:
-
-- Murah = 15%
-- Normal = 30%
-- Mahal = 50%
-
-## Contoh penggunaan bisnis
-
-Aplikasi ini cocok digunakan untuk usaha seperti:
-
-- toko bunga
-- usaha catering
-- pastry dan bakery
-- minuman dan coffee shop
-- produk rumahan dengan bahan baku variatif
-
-## Catatan penting
-
-- File `config.local.php` bersifat lokal dan tidak boleh dipublikasikan ke repository jika berisi kredensial sensitif.
-- Jika proyek dipindahkan ke hosting, sesuaikan konfigurasi database pada file `config.local.php` sesuai server hosting Anda.
-
-## Lisensi
-
-Project ini dibuat untuk kebutuhan operasional internal dan dapat dikembangkan lebih lanjut sesuai kebutuhan bisnis.
-
-## Kontributor
-
-Project ini dapat dikembangkan lebih lanjut dengan fitur seperti:
-
-- laporan penjualan
-- export data ke Excel
-- autentikasi admin
-- riwayat perubahan harga
-- multi-user access
-
-Jika Anda ingin, saya juga bisa bantu membuat versi README yang lebih formal untuk GitHub atau versi yang lebih ringkas untuk presentation/demo project.
+Jalankan `php -l` untuk seluruh file PHP. Skenario manual minimum:
+buat Tepung (10 kg, Rp120.000), buat resep 250 gram, restock, jual 1/3 unit,
+uji stok kurang, opname, waste, dan void. Pastikan kartu stok serta laporan
+tetap konsisten.

@@ -1,0 +1,8 @@
+<?php
+declare(strict_types=1);
+require __DIR__ . '/includes/actions.php';
+layout_start('Pengaturan', 'settings.php');
+?>
+<section class="page-hero"><div><p class="eyebrow">SETTINGS</p><h1>Pengaturan aplikasi</h1><p class="muted">Markup dan mode stok digunakan oleh business logic bersama.</p></div></section>
+<section class="panel"><form method="post" class="form-grid"><?=csrf_field()?><input type="hidden" name="action" value="settings"><label>Nama bisnis<input name="setting[business_name]" value="<?=e(setting('business_name'))?>"></label><label>Alamat<input name="setting[business_address]" value="<?=e(setting('business_address'))?>"></label><label>Telepon<input name="setting[business_phone]" value="<?=e(setting('business_phone'))?>"></label><label>Markup murah (%)<input type="number" step="0.01" name="setting[markup_murah]" value="<?=e(setting('markup_murah','15'))?>"></label><label>Markup normal (%)<input type="number" step="0.01" name="setting[markup_normal]" value="<?=e(setting('markup_normal','30'))?>"></label><label>Markup mahal (%)<input type="number" step="0.01" name="setting[markup_mahal]" value="<?=e(setting('markup_mahal','50'))?>"></label><label>Validasi stok<select name="setting[stock_mode]"><option value="strict" <?=setting('stock_mode','strict')==='strict'?'selected':''?>>Strict (tolak jika kurang)</option><option value="allow_negative" <?=setting('stock_mode')==='allow_negative'?'selected':''?>>Izinkan negatif</option></select></label><label>Timezone<input name="setting[timezone]" value="<?=e(setting('timezone','Asia/Jakarta'))?>"></label><div class="form-actions"><button class="button primary">Simpan pengaturan</button></div></form></section>
+<?php layout_end(); ?>

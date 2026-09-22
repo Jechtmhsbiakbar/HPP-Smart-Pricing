@@ -4,3 +4,4 @@ DirectoryIndex index.php
 <FilesMatch "^(config(\.local)?\.php|database\.sql)$">
     Require all denied
 </FilesMatch>
+RedirectMatch 403 ^/(includes|database)/

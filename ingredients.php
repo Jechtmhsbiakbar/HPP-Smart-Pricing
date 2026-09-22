@@ -1,146 +1,16 @@
 <?php
 declare(strict_types=1);
-require __DIR__ . '/config.php';
-function e(string $value): string
-{
-    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-}
-function rupiah(float $value): string
-{
-    return 'Rp ' . number_format($value, 0, ',', '.');
-}
-$ingredients = [];
-$result = $db->query('SELECT i.id, i.name, i.base_unit, i.price, i.price_quantity, i.price_unit, COUNT(ri.id) AS usage_count FROM ingredients i LEFT JOIN recipe_ingredients ri ON ri.ingredient_id = i.id GROUP BY i.id ORDER BY i.name');
-while ($row = $result->fetch_assoc()) {
-    $ingredients[] = $row;
-}
-$saved = isset($_GET['saved']);
+require __DIR__ . '/includes/actions.php';
+$ingredients = active_ingredients();
+$edit = isset($_GET['edit']) ? one('SELECT * FROM ingredients WHERE id=?','i',[(int)$_GET['edit']]) : null;
+layout_start('Bahan', 'ingredients.php');
 ?>
-<!doctype html>
-<html lang="id">
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bahan · Smart Pricing: Toko Bunga Paubut Cantik</title>
-    <link rel="stylesheet" href="assets/styles.css?v=3">
-</head>
-
-<body>
-    <header class="topbar"><a class="brand" href="index.php"><img class="brand-logo"
-                src="assets/HPP_Toko-Bunga-Paubut(200x200).webp" alt="Logo Toko Bunga Paubut Cantik"><span>Toko Bunga Paubut Cantik</span></a><span class="status-dot">● Online</span></header>
-    <div class="app-shell">
-        <aside class="sidebar">
-            <p class="sidebar-label">MENU UTAMA</p><a href="index.php">⌂ Dashboard</a><a href="products.php">▣
-                Produk</a><a class="active" href="ingredients.php">◈ Bahan</a>
-        </aside>
-        <main class="container page-content">
-            <nav class="mobile-nav"><a href="index.php">Dashboard</a><a href="products.php">Produk</a><a class="active"
-                    href="ingredients.php">Bahan</a></nav>
-            <section class="page-hero">
-                <div>
-                    <p class="eyebrow">DATABASE BAHAN</p>
-                    <h1>Harga bahan</h1>
-                    <p class="muted">Kelola harga dan satuan bahan yang digunakan oleh produk.</p>
-                </div><a class="button primary" href="#ingredient-form">+ Tambah bahan</a>
-            </section>
-            <?php if ($saved): ?>
-                <div class="alert success">✓ Perubahan bahan berhasil disimpan.</div><?php endif; ?>
-            <section class="panel" id="ingredient-form">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">INPUT BAHAN</p>
-                        <h2>Tambah bahan baru</h2>
-                    </div><span class="badge">Rupiah otomatis</span>
-                </div>
-                <form method="post" action="index.php" class="ingredient-form-grid"><input type="hidden" name="action"
-                        value="add_ingredient"><input type="hidden" name="return_to" value="ingredients.php"><label>Nama
-                        bahan<input name="name" required placeholder="Contoh: Kopi Arabica"></label><label>Satuan
-                        dasar<select name="base_unit">
-                            <option>gram</option>
-                            <option>ml</option>
-                            <option>pcs</option>
-                        </select></label><label>Harga beli<input name="price_display" data-money-input
-                            data-hidden-target="new-price" inputmode="numeric" value="Rp 0" required><input
-                            type="hidden" name="price" id="new-price" value="0"><small class="field-help">Nominal
-                            otomatis menjadi Rupiah.</small></label><label>Untuk jumlah<input name="price_quantity"
-                            type="number" min="0.001" step="0.001" value="1" required><small class="field-help">Contoh:
-                            harga untuk 1 kg.</small></label><label>Satuan harga<select name="price_unit">
-                            <option>kg</option>
-                            <option>gram</option>
-                            <option>liter</option>
-                            <option>ml</option>
-                            <option>pcs</option>
-                        </select></label><button class="button primary" type="submit">Simpan bahan</button></form>
-            </section>
-            <section class="panel">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">BAHAN TERSIMPAN</p>
-                        <h2><?= count($ingredients) ?> bahan tersedia</h2>
-                    </div>
-                </div><?php if (!$ingredients): ?>
-                    <div class="empty"><strong>Belum ada bahan</strong><span>Tambahkan bahan pertama untuk mulai membuat
-                            produk.</span></div><?php else: ?>
-                    <div class="ingredient-list"><?php foreach ($ingredients as $ingredient): ?>
-                            <article class="ingredient-card">
-                                <div><strong><?= e($ingredient['name']) ?></strong><span><?= rupiah((float) $ingredient['price']) ?>
-                                        / <?= e((string) $ingredient['price_quantity']) ?>         <?= e($ingredient['price_unit']) ?> ·
-                                        dasar <?= e($ingredient['base_unit']) ?></span></div>
-                                <div class="card-actions"><button class="button secondary" type="button"
-                                        data-modal-open="edit-ingredient-<?= (int) $ingredient['id'] ?>">Edit</button><?php if ((int) $ingredient['usage_count'] === 0): ?>
-                                        <form method="post" action="index.php" onsubmit="return confirm('Hapus bahan ini?');"><input
-                                                type="hidden" name="action" value="delete_ingredient"><input type="hidden"
-                                                name="ingredient_id" value="<?= (int) $ingredient['id'] ?>"><input type="hidden"
-                                                name="return_to" value="ingredients.php"><button class="button danger"
-                                                type="submit">Hapus</button></form><?php else: ?><span class="usage-badge">Dipakai
-                                            <?= (int) $ingredient['usage_count'] ?> resep</span><?php endif; ?>
-                                </div>
-                            </article>
-                            <dialog class="edit-modal" id="edit-ingredient-<?= (int) $ingredient['id'] ?>">
-                                <div class="modal-heading">
-                                    <div>
-                                        <p class="eyebrow">EDIT BAHAN</p>
-                                        <h2><?= e($ingredient['name']) ?></h2>
-                                    </div><button class="modal-close" type="button" data-modal-close
-                                        aria-label="Tutup">×</button>
-                                </div>
-                                <form method="post" action="index.php" class="ingredient-modal-form"><input type="hidden"
-                                        name="action" value="update_ingredient"><input type="hidden" name="return_to"
-                                        value="ingredients.php"><input type="hidden" name="ingredient_id"
-                                        value="<?= (int) $ingredient['id'] ?>"><label>Nama bahan<input name="name" required
-                                            value="<?= e($ingredient['name']) ?>"></label>
-                                    <div class="modal-form-grid"><label>Satuan dasar<select name="base_unit">
-                                                <option <?= $ingredient['base_unit'] === 'gram' ? 'selected' : '' ?>>gram</option>
-                                                <option <?= $ingredient['base_unit'] === 'ml' ? 'selected' : '' ?>>ml</option>
-                                                <option <?= $ingredient['base_unit'] === 'pcs' ? 'selected' : '' ?>>pcs</option>
-                                            </select></label><label>Harga beli<input name="price_display" data-money-input
-                                                data-hidden-target="edit-price-<?= (int) $ingredient['id'] ?>"
-                                                inputmode="numeric"
-                                                value="<?= e(rupiah((float) $ingredient['price'])) ?>"><input type="hidden"
-                                                name="price" id="edit-price-<?= (int) $ingredient['id'] ?>"
-                                                value="<?= e((string) $ingredient['price']) ?>"></label><label>Untuk
-                                            jumlah<input name="price_quantity" type="number" min="0.001" step="0.001"
-                                                value="<?= e((string) $ingredient['price_quantity']) ?>"
-                                                required></label><label>Satuan harga<select name="price_unit">
-                                                <option <?= $ingredient['price_unit'] === 'kg' ? 'selected' : '' ?>>kg</option>
-                                                <option <?= $ingredient['price_unit'] === 'gram' ? 'selected' : '' ?>>gram</option>
-                                                <option <?= $ingredient['price_unit'] === 'liter' ? 'selected' : '' ?>>liter
-                                                </option>
-                                                <option <?= $ingredient['price_unit'] === 'ml' ? 'selected' : '' ?>>ml</option>
-                                                <option <?= $ingredient['price_unit'] === 'pcs' ? 'selected' : '' ?>>pcs</option>
-                                            </select></label></div>
-                                    <div class="modal-actions"><button class="button secondary" type="button"
-                                            data-modal-close>Batal</button><button class="button primary" type="submit">Simpan
-                                            perubahan</button></div>
-                                </form>
-                            </dialog><?php endforeach; ?>
-                    </div><?php endif; ?>
-            </section>
-        </main>
-    </div>
-    <footer>Smart Pricing: Toko Bunga Paubut Cantik · Kelola bahan dengan lebih rapi</footer>
-    <script src="assets/app.js?v=4"></script>
-</body>
-
-</html>
+<section class="page-hero"><div><p class="eyebrow">INVENTORY / BAHAN</p><h1>Kelola bahan baku</h1><p class="muted">Harga disimpan per satuan dasar agar resep dan stok konsisten.</p></div><a class="button primary" href="#ingredient-form">+ Tambah bahan</a></section>
+<section class="panel" id="ingredient-form"><div class="panel-heading"><div><p class="eyebrow"><?= $edit?'EDIT BAHAN':'INPUT BAHAN' ?></p><h2><?= $edit?'Perbarui '.e($edit['name']):'Bahan baru' ?></h2></div><span class="badge">Gram · ml · pcs</span></div>
+<form method="post" action="ingredients.php" class="form-grid"><?=csrf_field()?><input type="hidden" name="action" value="<?= $edit?'update_ingredient':'add_ingredient'?>"><input type="hidden" name="return_to" value="ingredients.php"><?php if($edit):?><input type="hidden" name="ingredient_id" value="<?=$edit['id']?>"><?php endif;?>
+<label>Nama bahan<input name="name" required value="<?=e($edit['name']??'')?>" placeholder="Contoh: Tepung"></label><label>Satuan stok<select name="base_unit"><?php foreach(['gram','ml','pcs'] as $u):?><option <?=($edit['base_unit']??'gram')===$u?'selected':''?>><?=$u?></option><?php endforeach;?></select></label>
+<label>Harga pembelian<input name="price" type="number" min="0" step="0.01" value="<?=e($edit['price']??'0')?>" required></label><label>Jumlah pembelian<input name="price_quantity" type="number" min="0.001" step="0.001" value="<?=e($edit['price_quantity']??'1')?>" required></label><label>Satuan harga<select name="price_unit"><?php foreach(array_keys(APP_UNITS) as $u):?><option <?=($edit['price_unit']??'gram')===$u?'selected':''?>><?=$u?></option><?php endforeach;?></select></label>
+<label>Stok minimum<input name="min_stock" type="number" min="0" step="0.001" value="<?=e($edit['min_stock']??'0')?>"></label><label>Stok maksimum<input name="max_stock" type="number" min="0" step="0.001" value="<?=e($edit['max_stock']??'0')?>"></label><div class="form-actions"><button class="button primary">Simpan bahan</button><?php if($edit):?><a class="button secondary" href="ingredients.php">Batal</a><?php endif;?></div>
+</form></section>
+<section class="panel"><div class="panel-heading"><div><p class="eyebrow">DATABASE BAHAN</p><h2><?=count($ingredients)?> bahan aktif</h2></div><input class="table-search" data-filter-table="#ingredient-table" placeholder="Cari bahan..."></div><div class="table-scroll"><table id="ingredient-table"><thead><tr><th>Bahan</th><th>Harga dasar</th><th>Stok</th><th>Status</th><th></th></tr></thead><tbody><?php foreach($ingredients as $i):?><tr><td><strong><?=e($i['name'])?></strong><small><?=e($i['base_unit'])?> · beli <?=e($i['price_quantity'].' '.$i['price_unit'])?></small></td><td><?=rupiah($i['unit_price_base'])?> / <?=e($i['base_unit'])?></td><td><?=number_format((float)$i['stock_qty_base'],2,',','.')?> <?=e($i['base_unit'])?></td><td><?=((float)$i['min_stock']>0&&(float)$i['stock_qty_base']<=(float)$i['min_stock'])?'<span class="badge warning">Menipis</span>':'<span class="badge success">Aman</span>'?></td><td><a class="button secondary small" href="?edit=<?=$i['id']?>">Edit</a> <form method="post" style="display:inline" onsubmit="return confirm('Nonaktifkan bahan?')"><?=csrf_field()?><input type="hidden" name="action" value="delete_ingredient"><input type="hidden" name="ingredient_id" value="<?=$i['id']?>"><button class="button danger small">Nonaktifkan</button></form></td></tr><?php endforeach;?></tbody></table></div></section>
+<?php layout_end(); ?>
