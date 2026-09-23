@@ -40,6 +40,7 @@ function save_ingredient(): void
     }
     log_action($id ? 'UPDATE_INGREDIENT' : 'CREATE_INGREDIENT', $name);
     flash('Bahan berhasil disimpan.');
+    redirect_to((string) ($_POST['return_to'] ?? 'ingredients.php'));
 }
 
 function save_recipe(): void
@@ -108,6 +109,7 @@ function save_recipe(): void
     }
     log_action($wasUpdate ? 'UPDATE_RECIPE' : 'CREATE_RECIPE', $name);
     flash('Produk dan resep berhasil disimpan.');
+    redirect_to((string) ($_POST['return_to'] ?? 'products.php'));
 }
 
 function purchase(): void
@@ -140,6 +142,7 @@ function purchase(): void
     }
     log_action('PURCHASE', (string) $ingredientId);
     flash('Pembelian disimpan dan stok bertambah.');
+    redirect_to('purchases.php');
 }
 
 function sale(): void
@@ -234,6 +237,7 @@ function void_sale(): void
         throw $e;
     }
     flash('Transaksi dibatalkan dan stok dikembalikan.');
+    redirect_to('reports.php');
 }
 
 function handle_action(): void
@@ -253,10 +257,12 @@ function handle_action(): void
         case 'delete_ingredient':
             execute_sql('UPDATE ingredients SET is_active=0 WHERE id=?', 'i', [(int) $_POST['ingredient_id']]);
             flash('Bahan dinonaktifkan.');
+            redirect_to((string) ($_POST['return_to'] ?? 'ingredients.php'));
             break;
         case 'delete_recipe':
             execute_sql('UPDATE recipes SET is_active=0,updated_at=NOW() WHERE id=?', 'i', [(int) $_POST['recipe_id']]);
             flash('Produk dinonaktifkan.');
+            redirect_to((string) ($_POST['return_to'] ?? 'products.php'));
             break;
         case 'add_recipe':
         case 'update_recipe':
@@ -293,6 +299,7 @@ function handle_action(): void
                 throw $e;
             }
             flash('Waste dicatat.');
+            redirect_to('inventory.php');
             break;
         case 'opname':
             $physical = post_array('physical');
@@ -319,11 +326,13 @@ function handle_action(): void
                 throw $e;
             }
             flash('Stock opname disimpan.');
+            redirect_to('inventory.php');
             break;
         case 'settings':
             foreach ($_POST['setting'] ?? [] as $key => $value)
                 execute_sql('INSERT INTO settings(`key`,value) VALUES(?,?) ON DUPLICATE KEY UPDATE value=?', 'sss', [$key, (string) $value, (string) $value]);
             flash('Pengaturan disimpan.');
+            redirect_to('settings.php');
             break;
         default:
             throw new RuntimeException('Aksi tidak dikenali.');
