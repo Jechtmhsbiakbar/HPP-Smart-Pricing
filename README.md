@@ -14,9 +14,10 @@ dashboard, laporan, dan pengaturan markup.
 ## Instalasi
 
 1. Buat database MySQL kosong dan import `database.sql`.
-2. Salin `config.example.php` (atau buat manual) menjadi `config.local.php`,
-   lalu isi host, user, password, database, dan port. `config.local.php`
-   diabaikan git dan tidak boleh dipublikasikan.
+2. Salin `config.example.php` menjadi `config.local.php` untuk localhost.
+   File yang sama otomatis memilih mode hosting saat dibuka melalui domain
+   non-localhost, jadi tidak perlu menghapus atau mengomentari blok konfigurasi.
+   `config.local.php` diabaikan git dan tidak boleh dipublikasikan.
 3. Untuk database lama, backup dahulu lalu jalankan SQL di
    `database/migrations/001_operational_schema.sql` menggunakan client MySQL.
    Migration bersifat additive; jangan menghapus tabel lama.
@@ -63,15 +64,18 @@ diantrekan dan tidak boleh dianggap berhasil.
 ## Shared hosting dan keamanan
 
 Upload file PHP, `assets/`, `api/`, `database/`, dan manifest ke hosting.
-Pastikan `config.local.php` tidak dapat diunduh; `.htaccess` sudah memblokir
-file konfigurasi dan SQL pada Apache. Form perubahan memakai CSRF, output
+Atur environment variable berikut di panel hosting/PHP server sebelum membuka
+aplikasi: `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`,
+dan `APP_SETUP_KEY`. Jangan menyimpan nilainya di repository. Pastikan
+`config.local.php` tidak dapat diunduh; `.htaccess` sudah memblokir file
+konfigurasi dan SQL pada Apache. Form perubahan memakai CSRF, output
 di-escape, data memakai prepared statements, dan bahan/produk dinonaktifkan
 (soft delete) setelah digunakan. Error teknis dicatat ke error log server,
 sedangkan pengguna melihat pesan yang aman.
 
-Pada akses pertama, isi `setup_key` di `config.local.php` dengan nilai rahasia
-yang hanya diketahui operator, lalu `login.php` membuat akun ADMIN pertama
-dengan password minimal 8 karakter. Akun yang sudah masuk dapat digunakan untuk POS; operasi
+Pada akses pertama, `APP_SETUP_KEY` digunakan sebagai kunci rahasia dan
+`login.php` membuat akun ADMIN pertama dengan password minimal 8 karakter.
+Akun yang sudah masuk dapat digunakan untuk POS; operasi
 pengaturan, stok, pembelian, resep, dan pembatalan transaksi dibatasi untuk
 role ADMIN.
 

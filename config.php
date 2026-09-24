@@ -8,6 +8,12 @@ if (!is_file($configPath)) {
 }
 
 $config = require $configPath;
+foreach (['host', 'username', 'database'] as $required) {
+    if (!array_key_exists($required, $config) || !is_string($config[$required]) || $config[$required] === '') {
+        http_response_code(500);
+        exit('Konfigurasi database tidak lengkap. Periksa environment localhost/hosting.');
+    }
+}
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $db = new mysqli(
     (string) $config['host'],
@@ -19,7 +25,7 @@ $db = new mysqli(
 
 if ($db->connect_error) {
     http_response_code(500);
-    exit('Koneksi database gagal. Periksa konfigurasi database InfinityFree Anda.');
+    exit('Koneksi database gagal. Periksa konfigurasi database server.');
 }
 
 $db->set_charset('utf8mb4');
