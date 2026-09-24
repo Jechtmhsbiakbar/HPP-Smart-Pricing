@@ -36,6 +36,7 @@ dashboard, laporan, dan pengaturan markup.
 | Stok, opname, waste, kartu stok | `inventory.php` |
 | Penjualan dan CSV | `reports.php` |
 | Markup dan strict stock | `settings.php` |
+| Manajemen user | `users.php` (ADMIN saja) |
 
 `includes/app.php` adalah sumber tunggal konversi satuan, kalkulasi HPP,
 query helper, CSRF, dan operasi stock movement. `includes/actions.php`
@@ -77,7 +78,9 @@ Pada akses pertama, `APP_SETUP_KEY` digunakan sebagai kunci rahasia dan
 `login.php` membuat akun ADMIN pertama dengan password minimal 8 karakter.
 Akun yang sudah masuk dapat digunakan untuk POS; operasi
 pengaturan, stok, pembelian, resep, dan pembatalan transaksi dibatasi untuk
-role ADMIN.
+role ADMIN. ADMIN dapat mengelola user dari `users.php`; password selalu
+disimpan sebagai hash, akun sendiri tidak dapat dinonaktifkan, dan edit akun
+sendiri tidak mengakhiri sesi login.
 
 ## Validasi cepat
 

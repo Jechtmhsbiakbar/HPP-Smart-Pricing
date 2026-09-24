@@ -247,6 +247,8 @@ function layout_start(string $title, string $active): void
     require_auth();
     $flash = take_flash();
     $links = ['index.php' => 'Dashboard', 'ingredients.php' => 'Bahan', 'products.php' => 'Produk', 'purchases.php' => 'Pembelian', 'pos.php' => 'POS', 'inventory.php' => 'Stok', 'reports.php' => 'Laporan', 'settings.php' => 'Pengaturan', 'logout.php' => 'Keluar'];
+    if (current_user() && (string) current_user()['role'] === 'ADMIN')
+        $links = array_slice($links, 0, -1, true) + ['users.php' => 'User'] + array_slice($links, -1, 1, true);
     ?><!doctype html>
     <html lang="id">
 
@@ -256,7 +258,7 @@ function layout_start(string $title, string $active): void
         <meta name="theme-color" content="#2563eb">
         <link rel="manifest" href="manifest.webmanifest">
         <title><?= e($title) ?> · <?= e(app_name()) ?></title>
-        <link rel="stylesheet" href="assets/styles.css?v=5">
+        <link rel="stylesheet" href="assets/styles.css?v=6">
     </head>
 
     <body>
@@ -267,12 +269,12 @@ function layout_start(string $title, string $active): void
             <aside class="sidebar">
                 <p class="sidebar-label">OPERASIONAL</p><?php foreach ($links as $href => $label): ?><a
                         class="<?= $active === $href ? 'active' : '' ?>"
-                        href="<?= $href ?>"><?= e($label) ?></a><?php endforeach; ?>
+                        href="<?= $href ?>"<?= $href === 'logout.php' ? ' data-logout-trigger' : '' ?>><?= e($label) ?></a><?php endforeach; ?>
             </aside>
             <main class="container page-content">
                 <nav class="mobile-nav"><?php foreach ($links as $href => $label): ?><a
                             class="<?= $active === $href ? 'active' : '' ?>"
-                            href="<?= $href ?>"><?= e($label) ?></a><?php endforeach; ?></nav><?php if ($flash): ?>
+                            href="<?= $href ?>"<?= $href === 'logout.php' ? ' data-logout-trigger' : '' ?>><?= e($label) ?></a><?php endforeach; ?></nav><?php if ($flash): ?>
                     <div class="alert <?= e($flash[0]) ?>"><?= e($flash[1]) ?></div><?php endif; ?><?php
                           }
                           function layout_end(): void
@@ -280,7 +282,21 @@ function layout_start(string $title, string $active): void
             </main>
         </div>
         <footer><?= e(app_name()) ?> · data lokal Anda tetap milik Anda</footer>
-        <script src="assets/app.js?v=5"></script>
+        <dialog id="logout-dialog" class="logout-dialog" aria-labelledby="logout-dialog-title">
+            <div class="modal-heading">
+                <div>
+                    <p class="eyebrow">KONFIRMASI</p>
+                    <h2 id="logout-dialog-title">Keluar dari aplikasi?</h2>
+                </div>
+                <button class="modal-close" type="button" data-logout-cancel aria-label="Tutup dialog">&times;</button>
+            </div>
+            <p class="muted">Sesi Anda akan diakhiri dan Anda perlu masuk kembali untuk mengakses aplikasi.</p>
+            <div class="modal-actions">
+                <button class="button secondary" type="button" data-logout-cancel>Batal</button>
+                <a class="button danger" href="logout.php">Ya, Keluar</a>
+            </div>
+        </dialog>
+        <script src="assets/app.js?v=7"></script>
         <script src="assets/pwa.js?v=1"></script>
     </body>
 

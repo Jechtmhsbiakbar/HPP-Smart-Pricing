@@ -1,5 +1,28 @@
 (function () {
   'use strict';
+  var logoutDialog = document.getElementById('logout-dialog');
+  if (logoutDialog) {
+    document.querySelectorAll('[data-logout-trigger]').forEach(function (trigger) {
+      trigger.addEventListener('click', function (event) {
+        if (typeof logoutDialog.showModal !== 'function') return;
+        event.preventDefault();
+        logoutDialog.showModal();
+        var cancel = logoutDialog.querySelector('[data-logout-cancel]');
+        if (cancel) cancel.focus();
+      });
+    });
+    logoutDialog.querySelectorAll('[data-logout-cancel]').forEach(function (cancel) {
+      cancel.addEventListener('click', function () { logoutDialog.close(); });
+    });
+    logoutDialog.addEventListener('click', function (event) {
+      if (event.target === logoutDialog) logoutDialog.close();
+    });
+  }
+  document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      if (!window.confirm(form.getAttribute('data-confirm'))) event.preventDefault();
+    });
+  });
   document.querySelectorAll('[data-filter-table]').forEach(function (input) {
     input.addEventListener('input', function () {
       var table = document.querySelector(input.getAttribute('data-filter-table')); if (!table) return;

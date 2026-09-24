@@ -112,6 +112,72 @@ function save_recipe(): void
     redirect_to((string) ($_POST['return_to'] ?? 'products.php'));
 }
 
+function save_user(): void
+{
+    $id = (int) ($_POST['user_id'] ?? 0);
+    $username = trim((string) ($_POST['username'] ?? ''));
+    $password = (string) ($_POST['password'] ?? '');
+    $role = (string) ($_POST['role'] ?? 'KASIR');
+    $isActive = (int) ($_POST['is_active'] ?? 1) === 1 ? 1 : 0;
+    $currentUser = current_user();
+
+    if ($username === '' || strlen($username) > 80)
+        throw new RuntimeException('Username wajib diisi dan maksimal 80 karakter.');
+    if (!preg_match('/^[\p{L}\p{N}._@-]+$/u', $username))
+        throw new RuntimeException('Username hanya boleh berisi huruf, angka, titik, garis bawah, tanda hubung, atau @.');
+    if (!in_array($role, ['ADMIN', 'KASIR'], true))
+        throw new RuntimeException('Role user tidak valid.');
+    if ($id === 0 && strlen($password) < 8)
+        throw new RuntimeException('Password user baru minimal 8 karakter.');
+    if ($password !== '' && strlen($password) < 8)
+        throw new RuntimeException('Password minimal 8 karakter.');
+    if ($currentUser && $id === (int) $currentUser['id'] && $isActive !== 1)
+        throw new RuntimeException('Akun yang sedang digunakan tidak dapat dinonaktifkan.');
+
+    if (one('SELECT id FROM users WHERE username=? AND id<>?', 'si', [$username, $id]))
+        throw new RuntimeException('Username sudah digunakan.');
+
+    if ($id > 0) {
+        if (!one('SELECT id FROM users WHERE id=?', 'i', [$id]))
+            throw new RuntimeException('User tidak ditemukan.');
+        if ($password !== '')
+            execute_sql('UPDATE users SET username=?,password_hash=?,role=?,is_active=?,updated_at=NOW() WHERE id=?', 'sssii', [$username, password_hash($password, PASSWORD_DEFAULT), $role, $isActive, $id]);
+        else
+            execute_sql('UPDATE users SET username=?,role=?,is_active=?,updated_at=NOW() WHERE id=?', 'ssii', [$username, $role, $isActive, $id]);
+        if ($currentUser && $id === (int) $currentUser['id']) {
+            $_SESSION['user']['username'] = $username;
+            $_SESSION['user']['role'] = $role;
+        }
+        log_action('UPDATE_USER', $username);
+        flash('User berhasil diperbarui.');
+    } else {
+        execute_sql('INSERT INTO users(username,password_hash,role,is_active) VALUES(?,?,?,?)', 'sssi', [$username, password_hash($password, PASSWORD_DEFAULT), $role, $isActive]);
+        log_action('CREATE_USER', $username);
+        flash('User berhasil ditambahkan.');
+    }
+    redirect_to('users.php');
+}
+
+function deactivate_user(): void
+{
+    $id = (int) ($_POST['user_id'] ?? 0);
+    $currentUser = current_user();
+    if ($id <= 0 || ($currentUser && $id === (int) $currentUser['id']))
+        throw new RuntimeException('Akun yang sedang digunakan tidak dapat dihapus.');
+    $user = one('SELECT id,username,role,is_active FROM users WHERE id=?', 'i', [$id]);
+    if (!$user)
+        throw new RuntimeException('User tidak ditemukan.');
+    if ((string) $user['role'] === 'ADMIN' && (int) $user['is_active'] === 1) {
+        $activeAdmins = (int) (one('SELECT COUNT(*) AS total FROM users WHERE role="ADMIN" AND is_active=1')['total'] ?? 0);
+        if ($activeAdmins <= 1)
+            throw new RuntimeException('User ini adalah admin aktif terakhir dan tidak dapat dihapus.');
+    }
+    execute_sql('UPDATE users SET is_active=0,updated_at=NOW() WHERE id=?', 'i', [$id]);
+    log_action('DEACTIVATE_USER', (string) $user['username']);
+    flash('User dinonaktifkan. Data histori tetap dipertahankan.');
+    redirect_to('users.php');
+}
+
 function purchase(): void
 {
     global $db;
@@ -247,7 +313,7 @@ function handle_action(): void
     require_auth();
     verify_csrf();
     $action = (string) ($_POST['action'] ?? '');
-    if (in_array($action, ['add_ingredient', 'update_ingredient', 'delete_ingredient', 'add_recipe', 'update_recipe', 'delete_recipe', 'purchase', 'void_sale', 'waste', 'opname', 'settings'], true))
+    if (in_array($action, ['add_ingredient', 'update_ingredient', 'delete_ingredient', 'add_recipe', 'update_recipe', 'delete_recipe', 'purchase', 'void_sale', 'waste', 'opname', 'settings', 'save_user', 'delete_user'], true))
         require_role('ADMIN');
     switch ($action) {
         case 'add_ingredient':
@@ -333,6 +399,12 @@ function handle_action(): void
                 execute_sql('INSERT INTO settings(`key`,value) VALUES(?,?) ON DUPLICATE KEY UPDATE value=?', 'sss', [$key, (string) $value, (string) $value]);
             flash('Pengaturan disimpan.');
             redirect_to('settings.php');
+            break;
+        case 'save_user':
+            save_user();
+            break;
+        case 'delete_user':
+            deactivate_user();
             break;
         default:
             throw new RuntimeException('Aksi tidak dikenali.');
