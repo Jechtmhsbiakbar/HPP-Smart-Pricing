@@ -40,8 +40,9 @@ layout_start('POS', 'pos.php');
                         <option value="transfer">Transfer</option>
                         <option value="qris">QRIS</option>
                     </select></label></div>
-            <div class="cart-total"><span>Total</span><strong id="cart-total">Rp 0</strong></div><button
-                class="button primary full" type="submit">Simpan transaksi</button>
+            <div class="cart-total"><span>Total</span><strong id="cart-total">Rp 0</strong></div>
+            <button type="button" class="button secondary full pay-exact" id="pay-exact">Bayar pas <span>Rp
+                    0</span></button><button class="button primary full" type="submit">Simpan transaksi</button>
         </form>
     </section>
 </div>

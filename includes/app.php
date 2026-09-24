@@ -121,6 +121,12 @@ function setting(string $key, string $default = ''): string
     }
     return $cache[$key] = $row ? (string) $row['value'] : $default;
 }
+
+$applicationTimezone = setting('timezone', 'Asia/Jakarta');
+if (!in_array($applicationTimezone, timezone_identifiers_list(), true))
+    $applicationTimezone = 'Asia/Jakarta';
+date_default_timezone_set($applicationTimezone);
+
 function app_name(): string
 {
     return setting('business_name', 'HPP Smart Pricing');
@@ -247,6 +253,7 @@ function layout_start(string $title, string $active): void
     require_auth();
     $flash = take_flash();
     $links = ['index.php' => 'Dashboard', 'ingredients.php' => 'Bahan', 'products.php' => 'Produk', 'purchases.php' => 'Pembelian', 'pos.php' => 'POS', 'inventory.php' => 'Stok', 'reports.php' => 'Laporan', 'settings.php' => 'Pengaturan', 'logout.php' => 'Keluar'];
+    $icons = ['index.php' => '⌂', 'ingredients.php' => '◈', 'products.php' => '✦', 'purchases.php' => '↗', 'pos.php' => '▣', 'inventory.php' => '▤', 'reports.php' => '◒', 'settings.php' => '⚙', 'users.php' => '♙', 'logout.php' => '↪'];
     if (current_user() && (string) current_user()['role'] === 'ADMIN')
         $links = array_slice($links, 0, -1, true) + ['users.php' => 'User'] + array_slice($links, -1, 1, true);
     ?><!doctype html>
@@ -255,26 +262,47 @@ function layout_start(string $title, string $active): void
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <meta name="theme-color" content="#2563eb">
+        <meta name="theme-color" content="#2563eb" id="theme-color">
         <link rel="manifest" href="manifest.webmanifest">
         <title><?= e($title) ?> · <?= e(app_name()) ?></title>
-        <link rel="stylesheet" href="assets/styles.css?v=6">
+        <script>
+            (function () {
+                var theme = null;
+                try { theme = localStorage.getItem('hpp-theme'); } catch (error) { }
+                if (theme !== 'dark' && theme !== 'light') {
+                    theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', theme);
+            }());
+        </script>
+        <link rel="stylesheet" href="assets/styles.css?v=7">
     </head>
 
-    <body>
-        <header class="topbar"><a class="brand" href="index.php"><img class="brand-logo"
-                    src="assets/HPP_Toko-Bunga-Paubut(200x200).webp" alt="Logo"><span><?= e(app_name()) ?></span></a><span
-                id="network-status" class="status-dot">● Online</span></header>
+    <body class="<?= e(pathinfo($active, PATHINFO_FILENAME)) ?>-page">
+        <header class="topbar">
+            <a class="brand" href="index.php"><img class="brand-logo" src="assets/HPP_Toko-Bunga-Paubut(200x200).webp"
+                    alt="Logo"><span><?= e(app_name()) ?><small>Smart operations</small></span></a>
+            <div class="topbar-actions">
+                <span id="network-status" class="status-dot">● Online</span>
+                <button class="theme-toggle" type="button" data-theme-toggle aria-label="Aktifkan dark mode"><span
+                        class="theme-toggle-icon">☾</span><span class="theme-toggle-label">Mode gelap</span></button>
+                <div class="user-chip"><span
+                        class="user-avatar"><?= e(strtoupper(substr((string) (current_user()['username'] ?? 'U'), 0, 1))) ?></span><span
+                        class="user-meta"><strong><?= e((string) (current_user()['username'] ?? 'User')) ?></strong><small><?= e((string) (current_user()['role'] ?? 'USER')) ?></small></span>
+                </div>
+            </div>
+        </header>
         <div class="app-shell">
             <aside class="sidebar">
-                <p class="sidebar-label">OPERASIONAL</p><?php foreach ($links as $href => $label): ?><a
-                        class="<?= $active === $href ? 'active' : '' ?>"
-                        href="<?= $href ?>"<?= $href === 'logout.php' ? ' data-logout-trigger' : '' ?>><?= e($label) ?></a><?php endforeach; ?>
+                <div class="sidebar-label">OPERASIONAL</div><?php foreach ($links as $href => $label): ?><a
+                        class="<?= $active === $href ? 'active' : '' ?>" href="<?= $href ?>" <?= $href === 'logout.php' ? ' data-logout-trigger' : '' ?>><span class="nav-icon"
+                            aria-hidden="true"><?= $icons[$href] ?? '•' ?></span><span><?= e($label) ?></span></a><?php endforeach; ?>
             </aside>
             <main class="container page-content">
-                <nav class="mobile-nav"><?php foreach ($links as $href => $label): ?><a
-                            class="<?= $active === $href ? 'active' : '' ?>"
-                            href="<?= $href ?>"<?= $href === 'logout.php' ? ' data-logout-trigger' : '' ?>><?= e($label) ?></a><?php endforeach; ?></nav><?php if ($flash): ?>
+                <nav class="mobile-nav" aria-label="Navigasi utama"><?php foreach ($links as $href => $label): ?><a
+                            class="<?= $active === $href ? 'active' : '' ?>" href="<?= $href ?>" <?= $href === 'logout.php' ? ' data-logout-trigger' : '' ?>><span class="nav-icon"
+                                aria-hidden="true"><?= $icons[$href] ?? '•' ?></span><span><?= e($label) ?></span></a><?php endforeach; ?>
+                </nav><?php if ($flash): ?>
                     <div class="alert <?= e($flash[0]) ?>"><?= e($flash[1]) ?></div><?php endif; ?><?php
                           }
                           function layout_end(): void
@@ -296,7 +324,7 @@ function layout_start(string $title, string $active): void
                 <a class="button danger" href="logout.php">Ya, Keluar</a>
             </div>
         </dialog>
-        <script src="assets/app.js?v=7"></script>
+        <script src="assets/app.js?v=8"></script>
         <script src="assets/pwa.js?v=1"></script>
     </body>
 
