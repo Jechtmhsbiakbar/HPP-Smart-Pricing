@@ -1919,19 +1919,412 @@ footer {
   }
 }
 
-/* Product builder and catalog stay inside the viewport at tablet/mobile sizes. */
-.products-page .workspace {
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-}
-.products-page #recipe-form {
-  min-width: 0;
-}
+/* Katalog produk (kartu) tetap nyaman di layar tablet/mobile. */
 .products-page .panel-heading {
   flex-wrap: wrap;
 }
 .products-page .table-search {
   flex: 1 1 180px;
   min-width: 0;
+}
+.panel-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.panel-heading-actions .table-search {
+  flex: 1 1 200px;
+}
+.panel-heading-actions .button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-plus {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  font-size: 15px;
+  line-height: 1;
+}
+@media (max-width: 560px) {
+  .panel-heading-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .panel-heading-actions .table-search,
+  .panel-heading-actions .button {
+    width: 100%;
+  }
+}
+
+/* Modal "Tambah / Edit Produk" — dialog yang lebih lega dari edit-modal standar */
+.product-modal {
+  width: min(760px, calc(100% - 28px));
+  max-height: min(88dvh, 820px);
+}
+.product-modal .form-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.product-modal .modal-actions {
+  position: sticky;
+  bottom: -24px;
+  margin: 20px -24px -24px;
+  padding: 14px 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 16px 16px;
+}
+/* =========================================================
+   PRODUCT MODAL — RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .product-modal {
+    width: calc(100vw - 20px);
+    max-width: none;
+    max-height: calc(100dvh - 20px);
+    padding: 16px;
+    overflow-x: hidden;
+    border-radius: 14px;
+  }
+
+  /* Header */
+  .product-modal .modal-heading {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .product-modal .modal-heading .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+
+  .product-modal .modal-heading h2 {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .product-modal .modal-heading .badge {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+
+  .product-modal .modal-close {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
+
+  /* Semua label */
+  .product-modal form > label,
+  .product-modal .form-grid.compact > label {
+    font-size: 12px;
+    line-height: 1.35;
+    margin-bottom: 9px;
+  }
+
+  /* Input & Select */
+  .product-modal input,
+  .product-modal select {
+    min-height: 38px;
+    height: 38px;
+    padding: 8px 10px;
+    font-size: 12px;
+    border-radius: 7px;
+  }
+
+  .product-modal input::placeholder {
+    font-size: 11px;
+  }
+
+  /* Form utama */
+  .product-modal form > label {
+    margin-bottom: 10px;
+  }
+
+  /* Ingredient */
+  .product-modal .ingredient-line {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    align-items: end;
+    margin-bottom: 9px;
+  }
+
+  .product-modal .ingredient-line label {
+    font-size: 11px;
+  }
+
+  .product-modal .ingredient-line label:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .product-modal .ingredient-line input,
+  .product-modal .ingredient-line select {
+    min-height: 36px;
+    height: 36px;
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+
+  .product-modal .ingredient-unit-display {
+    min-height: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+
+  .product-modal .ingredient-line .remove-line {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 17px;
+    border-radius: 7px;
+    justify-self: end;
+  }
+
+  /* Tombol tambah bahan */
+  .product-modal #add-line {
+    min-height: 36px;
+    height: 36px;
+    padding: 7px 11px;
+    font-size: 11px;
+    border-radius: 7px;
+    margin-top: 2px;
+  }
+
+  /* Grid biaya */
+  .product-modal .form-grid.compact {
+    gap: 9px;
+  }
+
+  .product-modal .form-grid.compact > label {
+    margin-bottom: 0;
+  }
+
+  /* HPP & harga rekomendasi */
+  .product-modal #display-hpp,
+  .product-modal #display-recommended-price {
+    font-size: 12px;
+  }
+
+  /* Metode harga jual */
+  .product-modal .form-grid.compact > div[style*="grid-column"] {
+    margin-top: 6px !important;
+  }
+
+  .product-modal .form-grid.compact > div[style*="grid-column"] > label {
+    font-size: 11px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .product-modal .form-grid.compact > div[style*="grid-column"] > div {
+    gap: 12px !important;
+    margin-bottom: 6px !important;
+    flex-wrap: wrap;
+  }
+
+  .product-modal .form-grid.compact > div[style*="grid-column"] > div label {
+    font-size: 11px !important;
+    gap: 4px !important;
+  }
+
+  .product-modal .form-grid.compact input[type="radio"] {
+    width: 14px;
+    height: 14px;
+    min-height: 14px;
+  }
+
+  /* Harga jual */
+  .product-modal #container-selling-price {
+    margin-top: 2px;
+  }
+
+  /* Action buttons */
+  .product-modal .modal-actions {
+    bottom: -16px;
+    margin: 14px -16px -16px;
+    padding: 10px 16px;
+    gap: 8px;
+    border-radius: 0 0 14px 14px;
+  }
+
+  .product-modal .modal-actions .button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 36px;
+    height: 36px;
+    padding: 7px 10px;
+    font-size: 11px;
+    text-align: center;
+    border-radius: 7px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 560px) {
+  .product-modal {
+    width: calc(100vw - 12px);
+    max-height: calc(100dvh - 12px);
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  /* Header lebih compact */
+  .product-modal .modal-heading {
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .product-modal .modal-heading .eyebrow {
+    font-size: 8px;
+  }
+
+  .product-modal .modal-heading h2 {
+    font-size: 13px;
+  }
+
+  .product-modal .modal-heading .badge {
+    font-size: 8px;
+    padding: 2px 5px;
+  }
+
+  .product-modal .modal-close {
+    width: 29px;
+    height: 29px;
+    font-size: 18px;
+  }
+
+  /* Label lebih kecil */
+  .product-modal form > label,
+  .product-modal .form-grid.compact > label {
+    font-size: 11px;
+    margin-bottom: 7px;
+  }
+
+  /* Input lebih compact */
+  .product-modal input,
+  .product-modal select {
+    min-height: 35px;
+    height: 35px;
+    padding: 6px 8px;
+    font-size: 11px;
+    border-radius: 6px;
+  }
+
+  .product-modal input::placeholder {
+    font-size: 10px;
+  }
+
+  /* Satu kolom */
+  .product-modal .form-grid.compact {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .product-modal .form-grid.compact > div[style*="grid-column"] {
+    grid-column: auto !important;
+  }
+
+  /* Ingredient satu kolom */
+  .product-modal .ingredient-line {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    align-items: stretch;
+  }
+
+  .product-modal .ingredient-line label:first-child {
+    grid-column: auto;
+  }
+
+  .product-modal .ingredient-line label {
+    font-size: 10px;
+  }
+
+  .product-modal .ingredient-line input,
+  .product-modal .ingredient-line select {
+    min-height: 34px;
+    height: 34px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .product-modal .ingredient-unit-display {
+    min-height: 34px;
+    height: 34px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .product-modal .ingredient-line .remove-line {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    font-size: 16px;
+    justify-self: end;
+  }
+
+  /* Tambah bahan */
+  .product-modal #add-line {
+    min-height: 34px;
+    height: 34px;
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+
+  /* HPP */
+  .product-modal #display-hpp,
+  .product-modal #display-recommended-price {
+    font-size: 11px;
+  }
+
+  /* Metode harga */
+  .product-modal .form-grid.compact > div[style*="grid-column"] > label {
+    font-size: 10px !important;
+  }
+
+  .product-modal .form-grid.compact > div[style*="grid-column"] > div {
+    gap: 8px !important;
+  }
+
+  .product-modal .form-grid.compact > div[style*="grid-column"] > div label {
+    font-size: 10px !important;
+  }
+
+  .product-modal .form-grid.compact input[type="radio"] {
+    width: 13px;
+    height: 13px;
+    min-height: 13px;
+  }
+
+  /* Action */
+  .product-modal .modal-actions {
+    bottom: -12px;
+    margin: 12px -12px -12px;
+    padding: 8px 12px;
+    gap: 6px;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .product-modal .modal-actions .button {
+    min-height: 34px;
+    height: 34px;
+    padding: 6px 8px;
+    font-size: 10px;
+    border-radius: 6px;
+  }
 }
 
 /* Kartu produk aktif — menggantikan tabel lama */
@@ -2082,25 +2475,11 @@ footer {
   width: auto !important;
   padding: 8px 24px;
 }
-@media (max-width: 1100px) and (min-width: 851px) {
-  .products-page .workspace {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .products-page #recipe-form {
-    max-width: none;
-  }
-  .products-page .form-grid.compact {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 @media (max-width: 850px) {
   .sidebar {
     position: static;
     height: auto;
     overflow: visible;
-  }
-  .products-page .workspace {
-    grid-template-columns: minmax(0, 1fr);
   }
   .products-page .form-grid.compact {
     grid-template-columns: repeat(2, minmax(0, 1fr));

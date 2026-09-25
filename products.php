@@ -45,16 +45,94 @@ layout_start('Produk & Resep', 'products.php');
         <h1>Produk dan resep</h1>
         <p class="muted">Semua jumlah resep dikonversi ke satuan stok sebelum HPP dihitung.</p>
     </div>
+    <div class="panel-heading-actions">
+                <input class="table-search" id="product-search-input" placeholder="Cari produk...">
+                <button type="button" class="button primary" id="btn-open-product-modal">
+                    <span class="btn-plus" aria-hidden="true">+</span> Tambah Produk
+                </button>
+            </div>
 </section>
-<div class="workspace">
-    <section class="panel" id="recipe-form">
+    <section class="panel products-catalog-panel">
         <div class="panel-heading">
             <div>
-                <p class="eyebrow">RECIPE BUILDER</p>
-                <h2><?= $editRecipe ? 'Edit Produk' : 'Produk baru' ?></h2>
-            </div><span class="badge">HPP terpusat</span>
+                <p class="eyebrow">PRODUK AKTIF</p>
+                <h2><?= count($recipes) ?> produk</h2>
+            </div>
+            
         </div>
-        <form method="post" action="products.php" id="form-product"><?= csrf_field() ?>
+
+        <?php if (empty($recipes)): ?>
+            <div class="empty">
+                <strong>Belum ada produk</strong>
+                <span>Tambahkan produk pertama lewat tombol "Tambah Produk" di atas.</span>
+            </div>
+        <?php else: ?>
+            <div class="product-catalog-grid" id="product-catalog-grid">
+                <?php foreach ($recipes as $r): ?>
+                    <article class="product-catalog-card">
+                        <div class="product-catalog-card-top">
+                            <div class="product-catalog-card-heading">
+                                <h3><?= e($r['name']) ?></h3>
+                                <span class="product-catalog-card-meta"><?= e($r['category_name'] ?? 'Belum berkategori') ?>
+                                    · Markup <?= e($r['price_tier']) ?></span>
+                            </div>
+                            <span class="badge">Aktif</span>
+                        </div>
+
+                        <dl class="product-catalog-stats">
+                            <div>
+                                <dt>HPP</dt>
+                                <dd><?= rupiah($r['hpp_live']) ?></dd>
+                            </div>
+                            <div>
+                                <dt>Rekomendasi</dt>
+                                <dd><?= rupiah($r['recommended_price'] ?? 0) ?></dd>
+                            </div>
+                        </dl>
+
+                        <div class="product-catalog-price-row">
+                            <span>Harga jual</span>
+                            <strong><?= rupiah($r['selling_price']) ?></strong>
+                        </div>
+
+                        <div class="product-catalog-actions">
+                            <a class="button secondary small" href="?edit=<?= $r['id'] ?>">Edit</a>
+                            <a class="button secondary small" href="pos.php?product=<?= $r['id'] ?>">Jual</a>
+                            <form method="post" class="form-action-inline"
+                                onsubmit="return confirm('Nonaktifkan produk?')">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="action" value="delete_recipe">
+                                <input type="hidden" name="recipe_id" value="<?= $r['id'] ?>">
+                                <button type="submit" class="button danger small">Nonaktifkan</button>
+                            </form>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+            <div class="empty" id="product-catalog-empty" hidden>
+                <strong>Tidak ditemukan</strong>
+                <span>Coba kata kunci pencarian lain.</span>
+            </div>
+        <?php endif; ?>
+
+        <?php if (count($recipes) > 6): ?>
+            <div class="panel-footer">
+                <button type="button" id="btn-toggle-products" class="button secondary btn-toggle-more">
+                    Tampilkan Lebih Banyak (<?= count($recipes) - 6 ?> produk lainnya)
+                </button>
+            </div>
+        <?php endif; ?>
+    </section>
+
+<dialog class="edit-modal product-modal" id="product-modal">
+    <div class="modal-heading">
+        <div>
+            <p class="eyebrow">RECIPE BUILDER</p>
+            <h2><?= $editRecipe ? 'Edit produk' : 'Produk baru' ?> <span class="badge">HPP terpusat</span></h2>
+        </div>
+        <button type="button" class="modal-close" data-modal-close aria-label="Tutup">×</button>
+    </div>
+    <form method="post" action="products.php" id="form-product"><?= csrf_field() ?>
             <input type="hidden" name="action" value="<?= $editRecipe ? 'update_recipe' : 'add_recipe' ?>">
             <?php if ($editRecipe): ?>
                 <input type="hidden" name="recipe_id" value="<?= $editRecipe['id'] ?>">
@@ -173,85 +251,16 @@ layout_start('Produk & Resep', 'products.php');
                 </label>
             </div>
 
-            <button class="button primary full">Simpan produk</button>
-            <?php if ($editRecipe): ?>
-                <a class="button secondary full" href="products.php">Batal edit</a>
-            <?php endif; ?>
+            <div class="modal-actions">
+                <?php if ($editRecipe): ?>
+                    <a class="button secondary" href="products.php">Batal edit</a>
+                <?php else: ?>
+                    <button type="button" class="button secondary" data-modal-close>Batal</button>
+                <?php endif; ?>
+                <button class="button primary">Simpan produk</button>
+            </div>
         </form>
-    </section>
-
-    <section class="panel products-catalog-panel">
-        <div class="panel-heading">
-            <div>
-                <p class="eyebrow">PRODUK AKTIF</p>
-                <h2><?= count($recipes) ?> produk</h2>
-            </div>
-            <input class="table-search" id="product-search-input" placeholder="Cari produk...">
-        </div>
-
-        <?php if (empty($recipes)): ?>
-            <div class="empty">
-                <strong>Belum ada produk</strong>
-                <span>Tambahkan produk pertama lewat form di sebelah kiri.</span>
-            </div>
-        <?php else: ?>
-            <div class="product-catalog-grid" id="product-catalog-grid">
-                <?php foreach ($recipes as $r): ?>
-                    <article class="product-catalog-card">
-                        <div class="product-catalog-card-top">
-                            <div class="product-catalog-card-heading">
-                                <h3><?= e($r['name']) ?></h3>
-                                <span class="product-catalog-card-meta"><?= e($r['category_name'] ?? 'Belum berkategori') ?>
-                                    · Markup <?= e($r['price_tier']) ?></span>
-                            </div>
-                            <span class="badge">Aktif</span>
-                        </div>
-
-                        <dl class="product-catalog-stats">
-                            <div>
-                                <dt>HPP</dt>
-                                <dd><?= rupiah($r['hpp_live']) ?></dd>
-                            </div>
-                            <div>
-                                <dt>Rekomendasi</dt>
-                                <dd><?= rupiah($r['recommended_price'] ?? 0) ?></dd>
-                            </div>
-                        </dl>
-
-                        <div class="product-catalog-price-row">
-                            <span>Harga jual</span>
-                            <strong><?= rupiah($r['selling_price']) ?></strong>
-                        </div>
-
-                        <div class="product-catalog-actions">
-                            <a class="button secondary small" href="?edit=<?= $r['id'] ?>">Edit</a>
-                            <a class="button secondary small" href="pos.php?product=<?= $r['id'] ?>">Jual</a>
-                            <form method="post" class="form-action-inline"
-                                onsubmit="return confirm('Nonaktifkan produk?')">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="action" value="delete_recipe">
-                                <input type="hidden" name="recipe_id" value="<?= $r['id'] ?>">
-                                <button type="submit" class="button danger small">Nonaktifkan</button>
-                            </form>
-                        </div>
-                    </article>
-                <?php endforeach; ?>
-            </div>
-            <div class="empty" id="product-catalog-empty" hidden>
-                <strong>Tidak ditemukan</strong>
-                <span>Coba kata kunci pencarian lain.</span>
-            </div>
-        <?php endif; ?>
-
-        <?php if (count($recipes) > 6): ?>
-            <div class="panel-footer">
-                <button type="button" id="btn-toggle-products" class="button secondary btn-toggle-more">
-                    Tampilkan Lebih Banyak (<?= count($recipes) - 6 ?> produk lainnya)
-                </button>
-            </div>
-        <?php endif; ?>
-    </section>
-</div>
+</dialog>
 
 <!-- Template baris bahan untuk tombol "+ Tambah bahan" -->
 <template id="ingredient-line-template">
@@ -388,6 +397,48 @@ layout_start('Produk & Resep', 'products.php');
         const ingredientLinesContainer = document.getElementById('ingredient-lines');
         const template = document.getElementById('ingredient-line-template');
 
+        // --- Modal "Tambah / Edit Produk" ---
+        const productModal = document.getElementById('product-modal');
+        const btnOpenProductModal = document.getElementById('btn-open-product-modal');
+        const isEditMode = <?= $editRecipe ? 'true' : 'false' ?>;
+
+        function openProductModal() {
+            if (!productModal) return;
+            if (typeof productModal.showModal === 'function') {
+                productModal.showModal();
+            } else {
+                productModal.setAttribute('open', 'open');
+            }
+        }
+
+        function closeProductModal() {
+            if (!productModal) return;
+            if (typeof productModal.close === 'function') {
+                productModal.close();
+            } else {
+                productModal.removeAttribute('open');
+            }
+        }
+
+        if (btnOpenProductModal) {
+            btnOpenProductModal.addEventListener('click', openProductModal);
+        }
+
+        if (productModal) {
+            productModal.querySelectorAll('[data-modal-close]').forEach(function (btn) {
+                btn.addEventListener('click', closeProductModal);
+            });
+            // Klik di area backdrop (luar konten) menutup modal
+            productModal.addEventListener('click', function (event) {
+                if (event.target === productModal) closeProductModal();
+            });
+        }
+
+        // Sedang mengedit produk (?edit=ID) → langsung buka modal terisi datanya
+        if (isEditMode) {
+            openProductModal();
+        }
+
         // Tambah Baris Bahan Baru
         if (btnAddLine && template && ingredientLinesContainer) {
             btnAddLine.addEventListener('click', function () {
@@ -443,7 +494,7 @@ layout_start('Produk & Resep', 'products.php');
         }
 
         // --- Logika Show More / Show Less & Pencarian untuk Grid Kartu Produk ---
-        const maxInitialCards = 6;
+        const maxInitialCards = 8;
         let isExpanded = false;
         const btnToggle = document.getElementById('btn-toggle-products');
         const searchInput = document.getElementById('product-search-input');
