@@ -1,9 +1,9 @@
-const CACHE = 'hpp-smart-pricing-v1';
+const CACHE = 'hpp-smart-pricing-v2';
 const STATIC = [
   './',
   './index.php',
   './assets/styles.css?v=5',
-  './assets/app.js?v=5',
+  './assets/app.js?v=12',
   './assets/pwa.js?v=1',
   './manifest.webmanifest',
   './assets/HPP_Toko-Bunga-Paubut(200x200).webp',

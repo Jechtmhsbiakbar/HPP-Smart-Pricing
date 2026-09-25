@@ -29,6 +29,15 @@ CREATE TABLE
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE = InnoDB;
 
+INSERT IGNORE INTO categories (name, category_type)
+VALUES
+    ('Buket Bunga', 'product'),
+    ('Rangkaian Vas', 'product'),
+    ('Standing Flower', 'product'),
+    ('Bunga Satuan', 'product'),
+    ('Perlengkapan', 'product'),
+    ('Aksesori & Hadiah', 'product');
+
 CREATE TABLE
     IF NOT EXISTS ingredients (
         id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

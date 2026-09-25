@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/includes/actions.php';
 $products = recipes_with_cost();
+$categories = active_product_categories();
 $saved = isset($_GET['saved']);
 layout_start('POS', 'pos.php');
 ?>
@@ -19,10 +20,22 @@ layout_start('POS', 'pos.php');
         <div class="panel-heading">
             <h2>Produk</h2><input class="table-search" id="pos-search" placeholder="Cari produk...">
         </div>
+        <div class="category-pills" id="pos-category-pills" role="tablist" aria-label="Filter kategori produk">
+            <button type="button" class="category-pill is-active" data-category="all" role="tab" aria-selected="true">Semua</button>
+            <?php foreach ($categories as $category): ?>
+                <button type="button" class="category-pill" data-category="<?= $category['id'] ?>" role="tab" aria-selected="false">
+                    <?= e($category['name']) ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
         <div class="product-grid" id="pos-products"><?php foreach ($products as $p): ?><button type="button"
                     class="product-tile" data-id="<?= $p['id'] ?>" data-name="<?= e($p['name']) ?>"
-                    data-price="<?= $p['selling_price'] ?>"><strong><?= e($p['name']) ?></strong><span><?= rupiah($p['selling_price']) ?></span><small>HPP
-                        <?= rupiah($p['hpp_live']) ?></small></button><?php endforeach; ?></div>
+                    data-category="<?= e($p['category_id'] ?? '') ?>"
+                    data-price="<?= $p['selling_price'] ?>"><strong><?= e($p['name']) ?></strong><small class="product-category"><?= e($p['category_name'] ?? 'Belum berkategori') ?></small><span><?= rupiah($p['selling_price']) ?></span><small>HPP
+                        <?= rupiah($p['hpp_live']) ?></small></button><?php endforeach; ?><div class="empty pos-empty" id="pos-empty" hidden>
+                <strong>Produk tidak ditemukan</strong><span>Coba kategori atau kata kunci lain.</span>
+            </div>
+        </div>
     </section>
     <section class="panel cart-panel">
         <div class="panel-heading">

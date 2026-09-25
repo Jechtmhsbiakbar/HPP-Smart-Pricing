@@ -167,9 +167,13 @@ function active_ingredients(): array
 {
     return query_all('SELECT * FROM ingredients WHERE COALESCE(is_active,1)=1 ORDER BY name');
 }
+function active_product_categories(): array
+{
+    return query_all('SELECT id, name FROM categories WHERE category_type="product" AND is_active=1 ORDER BY id');
+}
 function recipes_with_cost(): array
 {
-    $rows = query_all('SELECT r.* FROM recipes r WHERE COALESCE(r.is_active,1)=1 ORDER BY r.name');
+    $rows = query_all('SELECT r.*, c.name AS category_name FROM recipes r LEFT JOIN categories c ON c.id=r.category_id WHERE COALESCE(r.is_active,1)=1 ORDER BY r.name');
     foreach ($rows as &$r) {
         $r['hpp_live'] = calculate_recipe_hpp((int) $r['id']);
         $r['ingredient_cost'] = $r['hpp_live'] - (float) $r['equipment_cost'] - (float) $r['operational_cost'] - (float) ($r['packaging_cost'] ?? 0);
@@ -324,7 +328,7 @@ function layout_start(string $title, string $active): void
                 <a class="button danger" href="logout.php">Ya, Keluar</a>
             </div>
         </dialog>
-        <script src="assets/app.js?v=8"></script>
+        <script src="assets/app.js?v=12"></script>
         <script src="assets/pwa.js?v=1"></script>
     </body>
 

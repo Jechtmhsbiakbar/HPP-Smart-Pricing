@@ -3,6 +3,7 @@ declare(strict_types=1);
 require __DIR__ . '/includes/actions.php';
 
 $ingredients = active_ingredients();
+$categories = active_product_categories();
 $recipes = recipes_with_cost();
 $editRecipe = isset($_GET['edit']) ? one('SELECT * FROM recipes WHERE id=?', 'i', [(int) $_GET['edit']]) : null;
 $editItems = $editRecipe ? recipe_items((int) $editRecipe['id']) : [];
@@ -64,14 +65,25 @@ layout_start('Produk & Resep', 'products.php');
                     placeholder="Es Kopi Susu">
             </label>
 
+            <label>Kategori utama
+                <select name="category_id" required>
+                    <option value="" disabled <?= empty($editRecipe['category_id']) ? 'selected' : '' ?>>Pilih kategori produk</option>
+                    <?php foreach ($categories as $category): ?>
+                        <option value="<?= $category['id'] ?>" <?= (int) ($editRecipe['category_id'] ?? 0) === (int) $category['id'] ? 'selected' : '' ?>>
+                            <?= e($category['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+
             <div id="ingredient-lines">
                 <?php foreach ($formItems as $item): ?>
                     <div class="ingredient-line">
                         <label>Bahan
-                            <select name="ingredient_id[]" class="input-ingredient-id" onchange="calculateLiveHpp()"
+                            <select name="ingredient_id[]" class="input-ingredient-id" onchange="syncIngredientUnit(this); calculateLiveHpp()"
                                 required>
                                 <?php foreach ($ingredients as $i): ?>
-                                    <option value="<?= $i['id'] ?>" <?= $i['id'] == $item['ingredient_id'] ? 'selected' : '' ?>>
+                                    <option value="<?= $i['id'] ?>" data-unit="<?= e($i['base_unit']) ?>" <?= $i['id'] == $item['ingredient_id'] ? 'selected' : '' ?>>
                                         <?= e($i['name']) ?> (<?= e($i['base_unit']) ?>)
                                     </option>
                                 <?php endforeach; ?>
@@ -81,12 +93,8 @@ layout_start('Produk & Resep', 'products.php');
                             <input name="quantity[]" class="input-ingredient-qty" type="number" step="any" min="0.001"
                                 value="<?= e((float) $item['quantity']) ?>" oninput="calculateLiveHpp()" required>
                         </label>
-                        <label>Satuan
-                            <select name="unit[]" class="input-ingredient-unit" onchange="calculateLiveHpp()">
-                                <?php foreach (array_keys(APP_UNITS) as $u): ?>
-                                    <option <?= $u === $item['base_unit'] ? 'selected' : '' ?>><?= $u ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                        <label>Satuan bahan
+                            <span class="ingredient-unit-display" aria-live="polite"><?= e($item['base_unit']) ?></span>
                         </label>
                         <button type="button" class="icon-button remove-line">×</button>
                     </div>
@@ -190,7 +198,7 @@ layout_start('Produk & Resep', 'products.php');
                 <tbody>
                     <?php foreach ($recipes as $r): ?>
                         <tr>
-                            <td data-label="Produk"><strong><?= e($r['name']) ?></strong><small>Markup
+                                <td data-label="Produk"><strong><?= e($r['name']) ?></strong><small><?= e($r['category_name'] ?? 'Belum berkategori') ?> · Markup
                                     <?= e($r['price_tier']) ?></small></td>
                             <td data-label="HPP"><?= rupiah($r['hpp_live']) ?></td>
                             <td data-label="Harga rekomendasi"><?= rupiah($r['recommended_price'] ?? 0) ?></td>
@@ -219,10 +227,10 @@ layout_start('Produk & Resep', 'products.php');
 <template id="ingredient-line-template">
     <div class="ingredient-line">
         <label>Bahan
-            <select name="ingredient_id[]" class="input-ingredient-id" onchange="calculateLiveHpp()" required>
+            <select name="ingredient_id[]" class="input-ingredient-id" onchange="syncIngredientUnit(this); calculateLiveHpp()" required>
                 <option value="" disabled selected>-- Pilih Bahan --</option>
                 <?php foreach ($ingredients as $i): ?>
-                    <option value="<?= $i['id'] ?>"><?= e($i['name']) ?> (<?= e($i['base_unit']) ?>)</option>
+                    <option value="<?= $i['id'] ?>" data-unit="<?= e($i['base_unit']) ?>"><?= e($i['name']) ?> (<?= e($i['base_unit']) ?>)</option>
                 <?php endforeach; ?>
             </select>
         </label>
@@ -230,12 +238,8 @@ layout_start('Produk & Resep', 'products.php');
             <input name="quantity[]" class="input-ingredient-qty" type="number" step="any" min="0.001" placeholder="1"
                 oninput="calculateLiveHpp()" required>
         </label>
-        <label>Satuan
-            <select name="unit[]" class="input-ingredient-unit" onchange="calculateLiveHpp()">
-                <?php foreach (array_keys(APP_UNITS) as $u): ?>
-                    <option><?= $u ?></option>
-                <?php endforeach; ?>
-            </select>
+        <label>Satuan bahan
+            <span class="ingredient-unit-display" aria-live="polite">Pilih bahan</span>
         </label>
         <button type="button" class="icon-button remove-line">×</button>
     </div>
@@ -267,6 +271,13 @@ layout_start('Produk & Resep', 'products.php');
     // Format Angka ke Teks Rupiah
     function toRupiahText(amount) {
         return 'Rp ' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Math.round(amount));
+    }
+
+    function syncIngredientUnit(select) {
+        const line = select.closest('.ingredient-line');
+        const display = line ? line.querySelector('.ingredient-unit-display') : null;
+        const option = select.options[select.selectedIndex];
+        if (display) display.textContent = option && option.dataset.unit ? option.dataset.unit : 'Pilih bahan';
     }
 
     // Hitung HPP dan Harga Rekomendasi secara Real-Time
@@ -354,6 +365,7 @@ layout_start('Produk & Resep', 'products.php');
             });
         }
 
+        document.querySelectorAll('.input-ingredient-id').forEach(syncIngredientUnit);
         calculateLiveHpp();
         togglePriceMode();
 

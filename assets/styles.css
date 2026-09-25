@@ -194,6 +194,86 @@ body {
   font-size: clamp(26px, 4vw, 36px);
   margin: 0 0 8px;
 }
+.export-status {
+  margin: -8px 0 28px;
+  padding: 16px 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+.export-status-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.export-status-heading strong {
+  display: block;
+}
+.export-status-heading > strong {
+  flex: 0 0 auto;
+  font-size: 18px;
+}
+.export-status .muted {
+  margin-top: 2px;
+  font-size: 13px;
+}
+.export-progress {
+  height: 8px;
+  margin-top: 13px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dbeafe;
+}
+.export-progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 240ms ease;
+}
+.export-status.is-loading .export-progress span {
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.3) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.3) 75%,
+    transparent 75%
+  );
+  background-size: 18px 18px;
+  animation: export-progress-stripes 700ms linear infinite;
+}
+@keyframes export-progress-stripes {
+  to {
+    background-position: 18px 0;
+  }
+}
+.export-status.is-success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+.export-status.is-success .export-progress {
+  background: #dcfce7;
+}
+.export-status.is-success .export-progress span {
+  background: var(--success);
+}
+.export-status.is-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+.export-status.is-error .export-progress {
+  background: #fee2e2;
+}
+.export-status.is-error .export-progress span {
+  background: #dc2626;
+}
 .mobile-nav {
   display: none;
 }
@@ -478,6 +558,10 @@ input[type="range"] {
   gap: 4px;
   color: var(--muted);
   padding: 12px 0;
+}
+.empty[hidden],
+.product-tile[hidden] {
+  display: none !important;
 }
 .empty strong {
   color: var(--ink);
@@ -1022,6 +1106,17 @@ select {
   color: var(--ink);
   font: inherit;
 }
+.ingredient-unit-display {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft, #f8fafc);
+  color: var(--primary);
+  font-weight: 700;
+}
 .form-actions {
   display: flex;
   align-items: end;
@@ -1153,6 +1248,40 @@ td small {
   grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
   gap: 10px;
 }
+.category-pills {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 2px 1px 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+}
+.category-pill {
+  flex: 0 0 auto;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.category-pill:hover,
+.category-pill.is-active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+.pos-empty {
+  grid-column: 1 / -1;
+  padding: 28px 14px;
+  text-align: center;
+}
 .product-tile {
   min-height: 105px;
   text-align: left;
@@ -1175,6 +1304,12 @@ td small {
   margin-top: 7px;
   color: var(--primary);
   font-weight: 800;
+}
+.product-tile .product-category {
+  margin-top: 5px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
 }
 .product-tile small {
   color: var(--muted);
@@ -1242,14 +1377,52 @@ td small {
   .table-search {
     max-width: none;
   }
+  .category-pills {
+    margin-right: -4px;
+    margin-left: -4px;
+    padding-right: 4px;
+    padding-left: 4px;
+  }
   .topbar {
     padding: 0 14px;
+  }
+  .filter-bar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .filter-bar label {
+    flex: 1 1 180px;
+    max-width: none;
+  }
+  .filter-bar .button {
+    flex: 1 1 180px;
   }
   .brand span {
     max-width: 180px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+@media (max-width: 520px) {
+  .category-pill {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .export-status {
+    padding: 14px;
+  }
+  .export-status-heading {
+    gap: 10px;
+  }
+  .export-status-heading > strong {
+    font-size: 16px;
+  }
+  .filter-bar,
+  .filter-bar label,
+  .filter-bar .button {
+    width: 100%;
+    flex-basis: 100%;
   }
 }
 

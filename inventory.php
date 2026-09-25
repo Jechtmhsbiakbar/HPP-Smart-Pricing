@@ -65,12 +65,12 @@ layout_start('Stok', 'inventory.php');
             <h2>Catat waste</h2>
         </div>
         <form method="post" class="form-grid"><?= csrf_field() ?><input type="hidden" name="action"
-                value="waste"><label>Bahan<select name="ingredient_id"><?php foreach ($ingredients as $i): ?>
-                        <option value="<?= $i['id'] ?>"><?= e($i['name']) ?></option><?php endforeach; ?>
-                </select></label><label>Jumlah<input name="quantity" type="number" min="0.001" step="any"
-                    required></label><label>Satuan<select name="unit"><?php foreach (array_keys(APP_UNITS) as $u): ?>
-                        <option><?= $u ?></option><?php endforeach; ?>
-                </select></label><label>Alasan<input name="reason" required
+            value="waste"><label>Bahan<select name="ingredient_id" id="waste-ingredient" onchange="syncWasteUnit()" required><?php foreach ($ingredients as $i): ?>
+                <option value="<?= $i['id'] ?>" data-unit="<?= e($i['base_unit']) ?>"><?= e($i['name']) ?></option><?php endforeach; ?>
+            </select></label><label>Jumlah<input name="quantity" id="waste-quantity" type="number" min="0.001" step="any"
+                required></label><label>Satuan bahan
+                <span class="ingredient-unit-display" id="waste-unit-display" aria-live="polite">-</span>
+            </label><label>Alasan<input name="reason" required
                     placeholder="Rusak / kadaluarsa"></label><button class="button danger">Simpan waste</button></form>
     </section>
 </div>
@@ -104,4 +104,26 @@ layout_start('Stok', 'inventory.php');
         </table>
     </div>
 </section>
+<script>
+    function syncWasteUnit() {
+        const ingredient = document.getElementById('waste-ingredient');
+        const display = document.getElementById('waste-unit-display');
+        const quantity = document.getElementById('waste-quantity');
+        if (!ingredient) return;
+
+        const option = ingredient.options[ingredient.selectedIndex];
+        const unit = option ? option.dataset.unit : '';
+        if (display) display.textContent = unit || '-';
+        if (quantity && unit === 'pcs') {
+            quantity.step = '1';
+            quantity.min = '1';
+            if (quantity.value) quantity.value = Math.round(parseFloat(quantity.value)) || 1;
+        } else if (quantity) {
+            quantity.step = 'any';
+            quantity.min = '0.001';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', syncWasteUnit);
+</script>
 <?php layout_end(); ?>

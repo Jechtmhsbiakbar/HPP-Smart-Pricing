@@ -49,15 +49,16 @@ function save_recipe(): void
     $name = trim((string) ($_POST['recipe_name'] ?? ''));
     $ids = post_array('ingredient_id');
     $qtys = post_array('quantity');
-    $units = post_array('unit');
     $equipment = post_float('equipment_cost');
     $operational = post_float('operational_cost');
     $packaging = post_float('packaging_cost');
+    $categoryId = (int) ($_POST['category_id'] ?? 0);
     $tier = (string) ($_POST['price_tier'] ?? 'normal');
     $id = (int) ($_POST['recipe_id'] ?? 0);
     $wasUpdate = $id > 0;
-    if ($name === '' || !$ids)
-        throw new RuntimeException('Nama produk dan minimal satu bahan wajib diisi.');
+    $category = one('SELECT id FROM categories WHERE id=? AND category_type="product" AND is_active=1', 'i', [$categoryId]);
+    if ($name === '' || !$ids || !$category)
+        throw new RuntimeException('Nama produk, kategori, dan minimal satu bahan wajib diisi.');
     if (!in_array($tier, ['murah', 'normal', 'mahal'], true))
         throw new RuntimeException('Tier harga tidak valid.');
     $lines = [];
@@ -65,15 +66,18 @@ function save_recipe(): void
     foreach ($ids as $i => $rawId) {
         $ingredientId = (int) $rawId;
         $quantity = (float) ($qtys[$i] ?? 0);
-        $unit = (string) ($units[$i] ?? '');
         if ($ingredientId <= 0 || $quantity <= 0)
             throw new RuntimeException('Bahan dan jumlah harus valid.');
         $ingredient = one('SELECT * FROM ingredients WHERE id=? AND is_active=1', 'i', [$ingredientId]);
         if (!$ingredient)
             throw new RuntimeException('Bahan tidak ditemukan.');
-        $baseQuantity = convert_qty($quantity, $unit, (string) $ingredient['base_unit']);
+        $baseUnit = (string) $ingredient['base_unit'];
+        unit_info($baseUnit);
+        if ($baseUnit === 'pcs' && floor($quantity) !== $quantity)
+            throw new RuntimeException('Jumlah bahan pcs harus berupa bilangan bulat.');
+        $baseQuantity = $quantity;
         $cost += $baseQuantity * (float) $ingredient['unit_price_base'];
-        $lines[] = [$ingredientId, $baseQuantity, (string) $ingredient['base_unit']];
+        $lines[] = [$ingredientId, $baseQuantity, $baseUnit];
     }
 
     // Hitung harga rekomendasi berdasarkan tier markup
@@ -92,10 +96,10 @@ function save_recipe(): void
     $started = true;
     try {
         if ($id > 0) {
-            execute_sql('UPDATE recipes SET name=?,equipment_cost=?,operational_cost=?,packaging_cost=?,hpp=?,price_tier=?,recommended_price=?,selling_price=?,updated_at=NOW() WHERE id=?', 'sddddsddi', [$name, $equipment, $operational, $packaging, $cost, $tier, $recommendedPrice, $sellingPrice, $id]);
+            execute_sql('UPDATE recipes SET name=?,category_id=?,equipment_cost=?,operational_cost=?,packaging_cost=?,hpp=?,price_tier=?,recommended_price=?,selling_price=?,updated_at=NOW() WHERE id=?', 'siddddsddi', [$name, $categoryId, $equipment, $operational, $packaging, $cost, $tier, $recommendedPrice, $sellingPrice, $id]);
             execute_sql('DELETE FROM recipe_ingredients WHERE recipe_id=?', 'i', [$id]);
         } else {
-            execute_sql('INSERT INTO recipes(name,equipment_cost,operational_cost,packaging_cost,hpp,price_tier,recommended_price,selling_price) VALUES(?,?,?,?,?,?,?,?)', 'sddddsdd', [$name, $equipment, $operational, $packaging, $cost, $tier, $recommendedPrice, $sellingPrice]);
+            execute_sql('INSERT INTO recipes(name,category_id,equipment_cost,operational_cost,packaging_cost,hpp,price_tier,recommended_price,selling_price) VALUES(?,?,?,?,?,?,?,?,?)', 'siddddsdd', [$name, $categoryId, $equipment, $operational, $packaging, $cost, $tier, $recommendedPrice, $sellingPrice]);
             $id = $db->insert_id;
         }
         foreach ($lines as $line)
@@ -346,11 +350,14 @@ function handle_action(): void
         case 'waste':
             $id = (int) $_POST['ingredient_id'];
             $quantity = post_float('quantity');
-            $unit = (string) $_POST['unit'];
             $ingredient = one('SELECT * FROM ingredients WHERE id=?', 'i', [$id]);
             if (!$ingredient || $quantity <= 0)
                 throw new RuntimeException('Bahan dan jumlah waste harus valid.');
-            $base = convert_qty($quantity, $unit, $ingredient['base_unit']);
+            $unit = (string) $ingredient['base_unit'];
+            unit_info($unit);
+            if ($unit === 'pcs' && floor($quantity) !== $quantity)
+                throw new RuntimeException('Jumlah waste pcs harus berupa bilangan bulat.');
+            $base = $quantity;
             global $db;
             $db->begin_transaction();
             $started = true;

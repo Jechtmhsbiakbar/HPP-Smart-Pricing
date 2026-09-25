@@ -44,8 +44,10 @@ menjalankan semua perubahan data dengan prepared statements. Penjualan
 menyimpan snapshot resep/HPP, sehingga perubahan harga atau resep tidak
 mengubah histori.
 
-CSV bahan, produk, dan kartu stok tersedia melalui `export.php?type=ingredients`,
-`export.php?type=products`, dan `export.php?type=movements`.
+Export bahan, produk, dan kartu stok tetap tersedia melalui `export.php?type=ingredients`,
+`export.php?type=products`, dan `export.php?type=movements`. Export penjualan
+mengambil data JSON dari `api/sales-export.php`, lalu membentuk dan mengunduh
+XLSX sepenuhnya di frontend menggunakan library SheetJS.
 
 ## Satuan dan HPP
 
