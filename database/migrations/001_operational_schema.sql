@@ -13,6 +13,11 @@ ADD COLUMN max_stock DECIMAL(18, 6) NOT NULL DEFAULT 0,
 ADD COLUMN is_active TINYINT (1) NOT NULL DEFAULT 1,
 ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
+ALTER TABLE units
+ADD COLUMN quantity_type ENUM ('decimal', 'integer') NOT NULL DEFAULT 'decimal';
+
+UPDATE units SET quantity_type='integer' WHERE code IN ('pcs', 'unit');
+
 ALTER TABLE recipes
 ADD COLUMN category_id INT UNSIGNED NULL,
 ADD COLUMN packaging_cost DECIMAL(14, 2) NOT NULL DEFAULT 0,

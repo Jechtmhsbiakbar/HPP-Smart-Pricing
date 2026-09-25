@@ -12,6 +12,13 @@ function post_float(string $key, float $default = 0): float
     $value = filter_var($raw, FILTER_VALIDATE_FLOAT);
     return $value === false ? $default : (float) $value;
 }
+function post_quantity(string $key, string $unit, string $label = 'Jumlah'): float
+{
+    $raw = $_POST[$key] ?? '';
+    if (!is_string($raw) || !preg_match('/^\d+(?:\.\d+)?$/', trim($raw)))
+        throw new RuntimeException($label . ' harus berupa angka yang valid.');
+    return assert_quantity((float) $raw, $unit, $label);
+}
 
 function post_array(string $key): array
 {
@@ -26,18 +33,38 @@ function save_ingredient(): void
     $price = post_float('price');
     $pqty = post_float('price_quantity', 1);
     $punit = (string) ($_POST['price_unit'] ?? $base);
-    if ($name === '' || $price < 0 || $pqty <= 0)
+
+    if ($name === '' || $price < 0 || $pqty <= 0) {
         throw new RuntimeException('Nama, jumlah pembelian, dan harga harus valid.');
+    }
+
     unit_info($base);
     unit_info($punit);
+
+    // Validasi pcs: Pastikan jika satuan pembelian atau dasar adalah pcs, nilainya harus bilangan bulat
+    if ($punit === 'pcs' && floor($pqty) !== $pqty) {
+        throw new RuntimeException('Jumlah pembelian untuk satuan pcs harus berupa bilangan bulat.');
+    }
+
+    $minStock = post_float('min_stock');
+    $maxStock = post_float('max_stock');
+
+    if (is_count_unit($base)) {
+        if (floor($minStock) !== $minStock || floor($maxStock) !== $maxStock) {
+            throw new RuntimeException('Stok minimum dan maksimum untuk bahan pcs harus berupa bilangan bulat.');
+        }
+    }
+
     $unitPrice = ($price / $pqty) / unit_factor($punit) * unit_factor($base);
     $id = (int) ($_POST['ingredient_id'] ?? 0);
-    $values = [$name, $base, $price, $pqty, $punit, $pqty, $punit, unit_factor($punit), $unitPrice, post_float('min_stock'), post_float('max_stock')];
+    $values = [$name, $base, $price, $pqty, $punit, $pqty, $punit, unit_factor($punit), $unitPrice, $minStock, $maxStock];
+
     if ($id > 0) {
         execute_sql('UPDATE ingredients SET name=?,base_unit=?,price=?,price_quantity=?,price_unit=?,purchase_quantity=?,purchase_unit=?,conversion_to_base=?,unit_price_base=?,min_stock=?,max_stock=?,updated_at=NOW() WHERE id=?', 'ssddsdsddddi', array_merge($values, [$id]));
     } else {
         execute_sql('INSERT INTO ingredients(name,base_unit,price,price_quantity,price_unit,purchase_quantity,purchase_unit,conversion_to_base,unit_price_base,min_stock,max_stock,is_active) VALUES(?,?,?,?,?,?,?,?,?,?,?,1)', 'ssddsdsdddd', $values);
     }
+
     log_action($id ? 'UPDATE_INGREDIENT' : 'CREATE_INGREDIENT', $name);
     flash('Bahan berhasil disimpan.');
     redirect_to((string) ($_POST['return_to'] ?? 'ingredients.php'));
@@ -73,8 +100,7 @@ function save_recipe(): void
             throw new RuntimeException('Bahan tidak ditemukan.');
         $baseUnit = (string) $ingredient['base_unit'];
         unit_info($baseUnit);
-        if ($baseUnit === 'pcs' && floor($quantity) !== $quantity)
-            throw new RuntimeException('Jumlah bahan pcs harus berupa bilangan bulat.');
+        assert_quantity($quantity, $baseUnit, 'Jumlah bahan');
         $baseQuantity = $quantity;
         $cost += $baseQuantity * (float) $ingredient['unit_price_base'];
         $lines[] = [$ingredientId, $baseQuantity, $baseUnit];
@@ -186,10 +212,9 @@ function purchase(): void
 {
     global $db;
     $ingredientId = (int) ($_POST['ingredient_id'] ?? 0);
-    $quantity = post_float('quantity');
     $unit = (string) ($_POST['unit'] ?? '');
     $total = post_float('total_cost');
-    if ($ingredientId <= 0 || $quantity <= 0 || $total < 0)
+    if ($ingredientId <= 0 || $total < 0)
         throw new RuntimeException('Data pembelian tidak valid.');
     $db->begin_transaction();
     $started = true;
@@ -197,6 +222,11 @@ function purchase(): void
         $ingredient = one('SELECT * FROM ingredients WHERE id=? FOR UPDATE', 'i', [$ingredientId]);
         if (!$ingredient)
             throw new RuntimeException('Bahan tidak ditemukan.');
+        if (!isset(APP_UNITS[$unit]))
+            throw new RuntimeException('Satuan pembelian tidak didukung.');
+        if (unit_info($unit)['kind'] !== unit_info((string) $ingredient['base_unit'])['kind'])
+            throw new RuntimeException('Satuan pembelian harus sejenis dengan satuan dasar bahan.');
+        $quantity = post_quantity('quantity', $unit, 'Jumlah pembelian');
         $base = convert_qty($quantity, $unit, (string) $ingredient['base_unit']);
         $priceBase = $base > 0 ? $total / $base : 0;
         execute_sql('INSERT INTO ingredient_purchases(ingredient_id,purchased_at,quantity,unit,quantity_base,total_cost,unit_price_base,note) VALUES(?,NOW(),?,?,?,?,?,?)', 'idsddds', [$ingredientId, $quantity, $unit, $base, $total, $priceBase, (string) ($_POST['note'] ?? '')]);
@@ -349,14 +379,11 @@ function handle_action(): void
             break;
         case 'waste':
             $id = (int) $_POST['ingredient_id'];
-            $quantity = post_float('quantity');
             $ingredient = one('SELECT * FROM ingredients WHERE id=?', 'i', [$id]);
-            if (!$ingredient || $quantity <= 0)
+            if (!$ingredient)
                 throw new RuntimeException('Bahan dan jumlah waste harus valid.');
             $unit = (string) $ingredient['base_unit'];
-            unit_info($unit);
-            if ($unit === 'pcs' && floor($quantity) !== $quantity)
-                throw new RuntimeException('Jumlah waste pcs harus berupa bilangan bulat.');
+            $quantity = post_quantity('quantity', $unit, 'Jumlah waste');
             $base = $quantity;
             global $db;
             $db->begin_transaction();
@@ -386,8 +413,12 @@ function handle_action(): void
                     $ingredient = one('SELECT * FROM ingredients WHERE id=? FOR UPDATE', 'i', [(int) $id]);
                     if (!$ingredient)
                         continue;
-                    $difference = (float) $value - (float) $ingredient['stock_qty_base'];
-                    execute_sql('INSERT INTO stock_opname_items(opname_id,ingredient_id,system_qty_base,physical_qty_base,difference_base) VALUES(?,?,?,?,?)', 'iiddd', [$opnameId, $id, $ingredient['stock_qty_base'], $value, $difference]);
+                    $baseUnit = (string) $ingredient['base_unit'];
+                    if (!is_string($value) || !preg_match('/^\d+(?:\.\d+)?$/', trim($value)))
+                        throw new RuntimeException('Stok fisik harus berupa angka yang valid.');
+                    $physicalQuantity = assert_quantity((float) $value, $baseUnit, 'Stok fisik', true);
+                    $difference = $physicalQuantity - (float) $ingredient['stock_qty_base'];
+                    execute_sql('INSERT INTO stock_opname_items(opname_id,ingredient_id,system_qty_base,physical_qty_base,difference_base) VALUES(?,?,?,?,?)', 'iiddd', [$opnameId, $id, $ingredient['stock_qty_base'], $physicalQuantity, $difference]);
                     if (abs($difference) > 0.000001)
                         update_stock((int) $id, $difference, 'STOCK_OPNAME', 'OPNAME-' . $opnameId, 'Stock opname');
                 }

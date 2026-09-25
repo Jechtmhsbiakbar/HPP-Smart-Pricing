@@ -1923,8 +1923,7 @@ footer {
 .products-page .workspace {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
 }
-.products-page #recipe-form,
-.products-page #product-table {
+.products-page #recipe-form {
   min-width: 0;
 }
 .products-page .panel-heading {
@@ -1934,21 +1933,154 @@ footer {
   flex: 1 1 180px;
   min-width: 0;
 }
-.products-page .table-scroll {
-  width: 100%;
-  min-width: 0;
-  overflow-x: auto;
+
+/* Kartu produk aktif — menggantikan tabel lama */
+.product-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
 }
-.products-page table {
-  min-width: 620px;
+.product-catalog-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
-.table-actions {
+.product-catalog-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--line));
+  box-shadow: var(--shadow-md);
+}
+.product-catalog-card[hidden] {
+  display: none !important;
+}
+.product-catalog-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.product-catalog-card-heading h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.product-catalog-card-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.product-catalog-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px dashed var(--line);
+  border-bottom: 1px dashed var(--line);
+}
+.product-catalog-stats dt {
+  margin: 0 0 2px;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.product-catalog-stats dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 13px;
+}
+.product-catalog-price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.product-catalog-price-row span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.product-catalog-price-row strong {
+  font-size: 18px;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+}
+.product-catalog-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 2px;
 }
-.table-actions form {
+.product-catalog-actions .button {
+  flex: 1 1 auto;
+  text-align: center;
+  padding: 7px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.product-catalog-actions .form-action-inline {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.product-catalog-actions .form-action-inline .button {
+  width: 100%;
+}
+@media (max-width: 560px) {
+  .product-catalog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Container Aksi: Ubah menjadi susunan Vertikal / Per Kolom */
+.table-actions {
+  display: flex !important;
+  flex-direction: column !important; /* Menyusun tombol ke bawah */
+  align-items: flex-end !important;  /* Rata kanan (atau flex-start jika ingin rata kiri) */
+  gap: 4px !important;               /* Jarak antar tombol ke bawah */
+}
+
+/* Mengunci elemen form agar ukurannya hanya seukuran tombol di dalamnya */
+.products-page .table-actions form,
+.products-page .form-action-inline {
+  display: block !important;
+  width: auto !important;
   margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Mengunci ukuran tombol agar seragam, ringkas, dan tidak memanjang ke kanan */
+.products-page .table-actions .button,
+.products-page .table-actions button {
+  display: inline-block !important;
+  width: 100px !important;            /* Lebar tetap agar semua tombol sejajar seragam */
+  max-width: 100px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  padding: 4px 8px !important;        /* Padding lebih ringkas */
+  font-size: 12px !important;         /* Ukuran teks pas untuk tombol kecil */
+  box-sizing: border-box !important;
+}
+
+/* Footer panel untuk tombol Show More */
+.panel-footer {
+  text-align: center;
+  padding: 1rem 0 0.5rem 0;
+}
+
+/* Tombol Show More agar pas dan tidak memenuhi lebar container */
+.btn-toggle-more {
+  width: auto !important;
+  padding: 8px 24px;
 }
 @media (max-width: 1100px) and (min-width: 851px) {
   .products-page .workspace {
@@ -1993,61 +2125,6 @@ footer {
   .products-page .table-search {
     flex-basis: 100%;
     width: 100%;
-  }
-  .products-page .table-scroll {
-    overflow: visible;
-  }
-  .products-page table,
-  .products-page table thead,
-  .products-page table tbody,
-  .products-page table tr,
-  .products-page table td {
-    display: block;
-    min-width: 0;
-    width: 100%;
-  }
-  .products-page table {
-    border: 0;
-  }
-  .products-page table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-  }
-  .products-page table tr {
-    margin-bottom: 12px;
-    padding: 12px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: var(--surface-soft);
-  }
-  .products-page table td {
-    display: grid;
-    grid-template-columns: minmax(105px, 0.7fr) minmax(0, 1.3fr);
-    gap: 10px;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--line);
-    text-align: right;
-    overflow-wrap: anywhere;
-  }
-  .products-page table td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 800;
-    text-align: left;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .products-page table td:last-child {
-    border-bottom: 0;
-    align-items: start;
-  }
-  .products-page table td:last-child .table-actions {
-    justify-content: flex-end;
   }
 }
 @media (max-width: 700px) {

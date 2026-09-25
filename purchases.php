@@ -49,7 +49,7 @@ layout_start('Pembelian', 'purchases.php');
                 id="input-quantity" 
                 type="number" 
                 min="1" 
-                step="any" 
+                step="1" 
                 placeholder="Contoh: 100" 
                 oninput="validateQuantityInput()"
                 required
@@ -143,15 +143,11 @@ function validateQuantityInput() {
 
     const currentUnit = selectUnit.value.toLowerCase();
 
-    if (currentUnit === 'pcs') {
+    if (currentUnit === 'pcs' || currentUnit === 'unit') {
         // Atur aturan html5 untuk pcs
         inputQty.step = "1";
         inputQty.min = "1";
 
-        // Jika user memasukkan desimal pada pcs, otomatis bulatkan
-        if (inputQty.value && inputQty.value.includes('.')) {
-            inputQty.value = Math.round(parseFloat(inputQty.value)) || 1;
-        }
     } else {
         // Atur aturan html5 untuk satuan selain pcs (misal gram/ml)
         inputQty.step = "any";
@@ -182,12 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (form) {
         form.addEventListener('submit', function(e) {
-            // 1. Pastikan jika satuan pcs, nilainya benar-benar dibulatkan sebelum dikirim
-            if (selectUnit && selectUnit.value.toLowerCase() === 'pcs' && inputQty) {
-                inputQty.value = Math.round(parseFloat(inputQty.value)) || 1;
-            }
-
-            // 2. Bersihkan format "Rp" & titik dari input total_cost
+            // Bersihkan format "Rp" & titik dari input total_cost
             if (inputTotalCost) {
                 inputTotalCost.value = inputTotalCost.value.replace(/[^0-9]/g, '');
             }

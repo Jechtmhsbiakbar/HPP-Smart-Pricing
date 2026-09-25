@@ -67,7 +67,7 @@ layout_start('Stok', 'inventory.php');
         <form method="post" class="form-grid"><?= csrf_field() ?><input type="hidden" name="action"
             value="waste"><label>Bahan<select name="ingredient_id" id="waste-ingredient" onchange="syncWasteUnit()" required><?php foreach ($ingredients as $i): ?>
                 <option value="<?= $i['id'] ?>" data-unit="<?= e($i['base_unit']) ?>"><?= e($i['name']) ?></option><?php endforeach; ?>
-            </select></label><label>Jumlah<input name="quantity" id="waste-quantity" type="number" min="0.001" step="any"
+            </select></label>            <label>Jumlah<input name="quantity" id="waste-quantity" type="number" min="1" step="1"
                 required></label><label>Satuan bahan
                 <span class="ingredient-unit-display" id="waste-unit-display" aria-live="polite">-</span>
             </label><label>Alasan<input name="reason" required
@@ -114,10 +114,9 @@ layout_start('Stok', 'inventory.php');
         const option = ingredient.options[ingredient.selectedIndex];
         const unit = option ? option.dataset.unit : '';
         if (display) display.textContent = unit || '-';
-        if (quantity && unit === 'pcs') {
+        if (quantity && (unit === 'pcs' || unit === 'unit')) {
             quantity.step = '1';
             quantity.min = '1';
-            if (quantity.value) quantity.value = Math.round(parseFloat(quantity.value)) || 1;
         } else if (quantity) {
             quantity.step = 'any';
             quantity.min = '0.001';

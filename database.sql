@@ -8,17 +8,18 @@ CREATE TABLE
         kind ENUM ('weight', 'volume', 'count') NOT NULL,
         base_code VARCHAR(20) NOT NULL,
         factor_to_base DECIMAL(18, 6) NOT NULL DEFAULT 1,
+        quantity_type ENUM ('decimal', 'integer') NOT NULL DEFAULT 'decimal',
         is_active TINYINT (1) NOT NULL DEFAULT 1
     ) ENGINE = InnoDB;
 
-INSERT IGNORE INTO units (code, name, kind, base_code, factor_to_base)
+INSERT IGNORE INTO units (code, name, kind, base_code, factor_to_base, quantity_type)
 VALUES
-    ('gram', 'Gram', 'weight', 'gram', 1),
-    ('kg', 'Kilogram', 'weight', 'gram', 1000),
-    ('ml', 'Mililiter', 'volume', 'ml', 1),
-    ('liter', 'Liter', 'volume', 'ml', 1000),
-    ('pcs', 'Pcs', 'count', 'pcs', 1),
-    ('unit', 'Unit', 'count', 'pcs', 1);
+    ('gram', 'Gram', 'weight', 'gram', 1, 'decimal'),
+    ('kg', 'Kilogram', 'weight', 'gram', 1000, 'decimal'),
+    ('ml', 'Mililiter', 'volume', 'ml', 1, 'decimal'),
+    ('liter', 'Liter', 'volume', 'ml', 1000, 'decimal'),
+    ('pcs', 'Pcs', 'count', 'pcs', 1, 'integer'),
+    ('unit', 'Unit', 'count', 'pcs', 1, 'integer');
 
 CREATE TABLE
     IF NOT EXISTS categories (
@@ -58,7 +59,8 @@ CREATE TABLE
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_ingredients_active (is_active),
-        CONSTRAINT fk_ingredient_category FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE SET NULL
+        CONSTRAINT fk_ingredient_category FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE SET NULL,
+        CONSTRAINT chk_ingredient_stock_integer CHECK (base_unit NOT IN ('pcs', 'unit') OR (stock_qty_base = FLOOR(stock_qty_base) AND min_stock = FLOOR(min_stock) AND max_stock = FLOOR(max_stock)))
     ) ENGINE = InnoDB;
 
 CREATE TABLE
@@ -90,7 +92,8 @@ CREATE TABLE
         unit VARCHAR(20) NOT NULL,
         UNIQUE KEY uq_recipe_ingredient (recipe_id, ingredient_id),
         CONSTRAINT fk_recipe_ingredients_recipe FOREIGN KEY (recipe_id) REFERENCES recipes (id) ON DELETE CASCADE,
-        CONSTRAINT fk_recipe_ingredients_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients (id) ON DELETE RESTRICT
+        CONSTRAINT fk_recipe_ingredients_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients (id) ON DELETE RESTRICT,
+        CONSTRAINT chk_recipe_quantity_integer CHECK (unit NOT IN ('pcs', 'unit') OR quantity = FLOOR(quantity))
     ) ENGINE = InnoDB;
 
 CREATE TABLE
@@ -106,7 +109,9 @@ CREATE TABLE
         note VARCHAR(255) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_purchase_date (purchased_at),
-        CONSTRAINT fk_purchase_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients (id) ON DELETE RESTRICT
+        CONSTRAINT fk_purchase_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients (id) ON DELETE RESTRICT,
+        CONSTRAINT chk_purchase_quantity_integer CHECK (unit NOT IN ('pcs', 'unit') OR quantity = FLOOR(quantity)),
+        CONSTRAINT chk_purchase_base_quantity_integer CHECK (unit NOT IN ('pcs', 'unit') OR quantity_base = FLOOR(quantity_base))
     ) ENGINE = InnoDB;
 
 CREATE TABLE
@@ -196,7 +201,9 @@ CREATE TABLE
         quantity_base DECIMAL(18, 6) NOT NULL,
         reason VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT fk_waste_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients (id) ON DELETE RESTRICT
+        CONSTRAINT fk_waste_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients (id) ON DELETE RESTRICT,
+        CONSTRAINT chk_waste_quantity_integer CHECK (unit NOT IN ('pcs', 'unit') OR quantity = FLOOR(quantity)),
+        CONSTRAINT chk_waste_base_quantity_integer CHECK (unit NOT IN ('pcs', 'unit') OR quantity_base = FLOOR(quantity_base))
     ) ENGINE = InnoDB;
 
 CREATE TABLE

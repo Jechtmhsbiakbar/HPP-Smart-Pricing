@@ -90,6 +90,19 @@ function unit_base(string $unit): string
 {
     return (string) unit_info($unit)['base'];
 }
+function is_count_unit(string $unit): bool
+{
+    return unit_info($unit)['kind'] === 'count';
+}
+function assert_quantity(float $quantity, string $unit, string $label = 'Jumlah', bool $allowZero = false): float
+{
+    unit_info($unit);
+    if (!is_finite($quantity) || ($allowZero ? $quantity < 0 : $quantity <= 0))
+        throw new RuntimeException($label . ($allowZero ? ' tidak boleh negatif.' : ' harus lebih besar dari nol.'));
+    if (is_count_unit($unit) && floor($quantity) !== $quantity)
+        throw new RuntimeException($label . ' untuk satuan pcs harus berupa bilangan bulat.');
+    return $quantity;
+}
 function convert_qty(float $qty, string $from, string $to): float
 {
     $a = unit_info($from);

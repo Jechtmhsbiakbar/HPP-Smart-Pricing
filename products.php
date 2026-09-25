@@ -67,7 +67,8 @@ layout_start('Produk & Resep', 'products.php');
 
             <label>Kategori utama
                 <select name="category_id" required>
-                    <option value="" disabled <?= empty($editRecipe['category_id']) ? 'selected' : '' ?>>Pilih kategori produk</option>
+                    <option value="" disabled <?= empty($editRecipe['category_id']) ? 'selected' : '' ?>>Pilih kategori
+                        produk</option>
                     <?php foreach ($categories as $category): ?>
                         <option value="<?= $category['id'] ?>" <?= (int) ($editRecipe['category_id'] ?? 0) === (int) $category['id'] ? 'selected' : '' ?>>
                             <?= e($category['name']) ?>
@@ -80,17 +81,19 @@ layout_start('Produk & Resep', 'products.php');
                 <?php foreach ($formItems as $item): ?>
                     <div class="ingredient-line">
                         <label>Bahan
-                            <select name="ingredient_id[]" class="input-ingredient-id" onchange="syncIngredientUnit(this); calculateLiveHpp()"
-                                required>
+                            <select name="ingredient_id[]" class="input-ingredient-id"
+                                onchange="syncIngredientUnit(this); calculateLiveHpp()" required>
                                 <?php foreach ($ingredients as $i): ?>
-                                    <option value="<?= $i['id'] ?>" data-unit="<?= e($i['base_unit']) ?>" <?= $i['id'] == $item['ingredient_id'] ? 'selected' : '' ?>>
+                                    <option value="<?= $i['id'] ?>" data-unit="<?= e($i['base_unit']) ?>"
+                                        <?= $i['id'] == $item['ingredient_id'] ? 'selected' : '' ?>>
                                         <?= e($i['name']) ?> (<?= e($i['base_unit']) ?>)
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </label>
                         <label>Jumlah
-                            <input name="quantity[]" class="input-ingredient-qty" type="number" step="any" min="0.001"
+                            <input name="quantity[]" class="input-ingredient-qty" type="number"
+                                step="<?= in_array($item['base_unit'], ['pcs', 'unit'], true) ? '1' : 'any' ?>" min="0.001"
                                 value="<?= e((float) $item['quantity']) ?>" oninput="calculateLiveHpp()" required>
                         </label>
                         <label>Satuan bahan
@@ -177,49 +180,76 @@ layout_start('Produk & Resep', 'products.php');
         </form>
     </section>
 
-    <section class="panel">
+    <section class="panel products-catalog-panel">
         <div class="panel-heading">
             <div>
                 <p class="eyebrow">PRODUK AKTIF</p>
                 <h2><?= count($recipes) ?> produk</h2>
-            </div><input class="table-search" data-filter-table="#product-table" placeholder="Cari produk...">
+            </div>
+            <input class="table-search" id="product-search-input" placeholder="Cari produk...">
         </div>
-        <div class="table-scroll">
-            <table id="product-table">
-                <thead>
-                    <tr>
-                        <th>Produk</th>
-                        <th>HPP</th>
-                        <th>Harga rekomendasi</th>
-                        <th>Harga jual</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($recipes as $r): ?>
-                        <tr>
-                                <td data-label="Produk"><strong><?= e($r['name']) ?></strong><small><?= e($r['category_name'] ?? 'Belum berkategori') ?> · Markup
-                                    <?= e($r['price_tier']) ?></small></td>
-                            <td data-label="HPP"><?= rupiah($r['hpp_live']) ?></td>
-                            <td data-label="Harga rekomendasi"><?= rupiah($r['recommended_price'] ?? 0) ?></td>
-                            <td data-label="Harga jual"><strong><?= rupiah($r['selling_price']) ?></strong></td>
-                            <td data-label="Aksi">
-                                <div class="table-actions"><a class="button secondary small"
-                                        href="?edit=<?= $r['id'] ?>">Edit</a> <a class="button secondary small"
-                                        href="pos.php?product=<?= $r['id'] ?>">Jual</a>
-                                    <form method="post" style="display:inline"
-                                        onsubmit="return confirm('Nonaktifkan produk?')">
-                                        <?= csrf_field() ?><input type="hidden" name="action" value="delete_recipe"><input
-                                            type="hidden" name="recipe_id" value="<?= $r['id'] ?>"><button
-                                            class="button danger small">Nonaktifkan</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+
+        <?php if (empty($recipes)): ?>
+            <div class="empty">
+                <strong>Belum ada produk</strong>
+                <span>Tambahkan produk pertama lewat form di sebelah kiri.</span>
+            </div>
+        <?php else: ?>
+            <div class="product-catalog-grid" id="product-catalog-grid">
+                <?php foreach ($recipes as $r): ?>
+                    <article class="product-catalog-card">
+                        <div class="product-catalog-card-top">
+                            <div class="product-catalog-card-heading">
+                                <h3><?= e($r['name']) ?></h3>
+                                <span class="product-catalog-card-meta"><?= e($r['category_name'] ?? 'Belum berkategori') ?>
+                                    · Markup <?= e($r['price_tier']) ?></span>
+                            </div>
+                            <span class="badge">Aktif</span>
+                        </div>
+
+                        <dl class="product-catalog-stats">
+                            <div>
+                                <dt>HPP</dt>
+                                <dd><?= rupiah($r['hpp_live']) ?></dd>
+                            </div>
+                            <div>
+                                <dt>Rekomendasi</dt>
+                                <dd><?= rupiah($r['recommended_price'] ?? 0) ?></dd>
+                            </div>
+                        </dl>
+
+                        <div class="product-catalog-price-row">
+                            <span>Harga jual</span>
+                            <strong><?= rupiah($r['selling_price']) ?></strong>
+                        </div>
+
+                        <div class="product-catalog-actions">
+                            <a class="button secondary small" href="?edit=<?= $r['id'] ?>">Edit</a>
+                            <a class="button secondary small" href="pos.php?product=<?= $r['id'] ?>">Jual</a>
+                            <form method="post" class="form-action-inline"
+                                onsubmit="return confirm('Nonaktifkan produk?')">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="action" value="delete_recipe">
+                                <input type="hidden" name="recipe_id" value="<?= $r['id'] ?>">
+                                <button type="submit" class="button danger small">Nonaktifkan</button>
+                            </form>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+            <div class="empty" id="product-catalog-empty" hidden>
+                <strong>Tidak ditemukan</strong>
+                <span>Coba kata kunci pencarian lain.</span>
+            </div>
+        <?php endif; ?>
+
+        <?php if (count($recipes) > 6): ?>
+            <div class="panel-footer">
+                <button type="button" id="btn-toggle-products" class="button secondary btn-toggle-more">
+                    Tampilkan Lebih Banyak (<?= count($recipes) - 6 ?> produk lainnya)
+                </button>
+            </div>
+        <?php endif; ?>
     </section>
 </div>
 
@@ -227,14 +257,17 @@ layout_start('Produk & Resep', 'products.php');
 <template id="ingredient-line-template">
     <div class="ingredient-line">
         <label>Bahan
-            <select name="ingredient_id[]" class="input-ingredient-id" onchange="syncIngredientUnit(this); calculateLiveHpp()" required>
+            <select name="ingredient_id[]" class="input-ingredient-id"
+                onchange="syncIngredientUnit(this); calculateLiveHpp()" required>
                 <option value="" disabled selected>-- Pilih Bahan --</option>
                 <?php foreach ($ingredients as $i): ?>
-                    <option value="<?= $i['id'] ?>" data-unit="<?= e($i['base_unit']) ?>"><?= e($i['name']) ?> (<?= e($i['base_unit']) ?>)</option>
+                    <option value="<?= $i['id'] ?>" data-unit="<?= e($i['base_unit']) ?>"><?= e($i['name']) ?>
+                        (<?= e($i['base_unit']) ?>)</option>
                 <?php endforeach; ?>
             </select>
         </label>
         <label>Jumlah
+            <!-- default min="0.001" dan step="any", nanti di-sync oleh JS saat bahan dipilih -->
             <input name="quantity[]" class="input-ingredient-qty" type="number" step="any" min="0.001" placeholder="1"
                 oninput="calculateLiveHpp()" required>
         </label>
@@ -277,7 +310,19 @@ layout_start('Produk & Resep', 'products.php');
         const line = select.closest('.ingredient-line');
         const display = line ? line.querySelector('.ingredient-unit-display') : null;
         const option = select.options[select.selectedIndex];
-        if (display) display.textContent = option && option.dataset.unit ? option.dataset.unit : 'Pilih bahan';
+
+        if (display) {
+            display.textContent = option && option.dataset.unit ? option.dataset.unit : 'Pilih bahan';
+        }
+
+        const quantity = line ? line.querySelector('.input-ingredient-qty') : null;
+        if (quantity) {
+            const isCountUnit = option && (option.dataset.unit === 'pcs' || option.dataset.unit === 'unit');
+
+            // Atur step dan min secara bersamaan agar validasi HTML5 tidak bentrok
+            quantity.step = isCountUnit ? '1' : 'any';
+            quantity.min = isCountUnit ? '1' : '0.001';
+        }
     }
 
     // Hitung HPP dan Harga Rekomendasi secara Real-Time
@@ -396,6 +441,56 @@ layout_start('Produk & Resep', 'products.php');
                 }
             });
         }
+
+        // --- Logika Show More / Show Less & Pencarian untuk Grid Kartu Produk ---
+        const maxInitialCards = 6;
+        let isExpanded = false;
+        const btnToggle = document.getElementById('btn-toggle-products');
+        const searchInput = document.getElementById('product-search-input');
+        const emptyState = document.getElementById('product-catalog-empty');
+
+        function updateProductCatalogVisibility() {
+            const cards = document.querySelectorAll('#product-catalog-grid .product-catalog-card');
+            const needle = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            const isSearching = needle !== '';
+            let visibleCount = 0;
+
+            cards.forEach((card, index) => {
+                var matchesSearch = !isSearching || card.textContent.toLowerCase().indexOf(needle) >= 0;
+                var visible = matchesSearch && (isSearching || isExpanded || index < maxInitialCards);
+                card.hidden = !visible;
+                if (visible) visibleCount++;
+            });
+
+            if (emptyState) emptyState.hidden = visibleCount > 0 || cards.length === 0;
+
+            if (btnToggle) {
+                if (isSearching) {
+                    btnToggle.style.display = 'none';
+                } else {
+                    btnToggle.style.display = 'inline-block';
+                    btnToggle.textContent = isExpanded
+                        ? 'Tampilkan Lebih Sedikit'
+                        : `Tampilkan Lebih Banyak (${cards.length - maxInitialCards} produk lainnya)`;
+                }
+            }
+        }
+
+        if (btnToggle) {
+            btnToggle.addEventListener('click', function () {
+                isExpanded = !isExpanded;
+                updateProductCatalogVisibility();
+            });
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                updateProductCatalogVisibility();
+            });
+        }
+
+        // Jalankan inisialisasi awal pembatasan kartu
+        updateProductCatalogVisibility();
     });
 </script>
 
